@@ -56,7 +56,7 @@ The package itself was designed and built by:
 
 Carl Saggs : [http://userbag.co.uk](http://userbag.co.uk)    
 David Couch : [http://david-couch.com](http://david-couch.com)    
-Micheal Pontin : [http://michaelpontin.com/](http://michaelpontin.com)    
+Michael Pontin: [http://michaelpontin.com/](http://michaelpontin.com)    
 Jared Bissenden : [blindwombat@hotmail.co.uk](mailto:blindwombat@hotmail.co.uk)
 
 The theProfile package would also not be possible without the work of:
