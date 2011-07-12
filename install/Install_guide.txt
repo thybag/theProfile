@@ -1,0 +1,39 @@
+## About ##
+
+TheProfile is a multiuser online identity management software, designed to allow users to import profile data from a number of sources in to a single manageable profile. Profile data can then be exported via openID or the provided API's for use wherever the user may wish.
+
+This software is only required if you wish to maintain your own copy of theProfile. If you simply want to use the software for your own profile you can just register an account on an existing installation such as www.theprofile.co.uk.
+
+
+## Minimum Requirements ##
+	
+* php 5.2
+* Mysql
+* CURL
+* .htaccess
+* 25mb disk space
+
+
+## INSTALL ##
+
+1) Place the files contained within the source/ folder in to the directory you wish to run your copy 
+   of theProfile from.
+
+2)  Run install.sql on your database to create the required tables.
+
+3) Open the file /app/config/database.php and configure the default database config to your your mysql 
+   databases credentials.
+
+4) Obtain API keys for twitter, facebook and google if you do not already have them. These can be obtained from
+	* http://www.facebook.com/developers/createapp.php
+	* https://dev.twitter.com/apps/new
+	* https://www.google.com/accounts/ManageDomains
+
+5) Open the file /app/config/core.php . 
+
+   Add the appId's, keys and secrets generated in the previous step to
+   the relevant variables at the top of the file. 
+
+   If you are not running theProfile from your domains base directory, also enter a relative path to the folder theProfile is located in to the Profile_root varible. 
+
+6) Save the files, then point your web-browser to the location of the theProfile installation and start using it.

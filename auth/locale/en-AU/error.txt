@@ -1,0 +1,50 @@
+<?php
+/**
+ *  Locale-specific informational messages.
+ */
+global $error;
+$error = array(
+  'no_profile'  => "No valid profile found for <em>%%1</em>.",
+  'no_username' => "A username is required",
+  'no_min_required_php' => "The required minimum version of PHP is 4.2.0, you are running ",
+  'missing' => "Missing '%%1'",
+  'missing_ext' => "Required extension '%%1' is missing.",
+  'missing_auth_header' => "Missing expected authorization header.",
+  'cannot_complete_op' => "Cannot complete operation",
+  'user_exists' => "User '%%1' already exists!",
+  'user_missing' => "Could not locate user '%%1'!",
+  'no_pwd_match' => "Passwords do not match",
+  'no_mode_access' => "You may not access this mode directly.",         
+  'no_debug_access' => "Cannot write to debug log",  
+  'invalid_trust' => "Not in requested trust domain: '%%1'",
+  'invalid_identity' => "Invalid identity: '%%1'",
+  'check_pwds' => "Check the passwords match and try again",
+
+  '400_header' => "HTTP/1.1 400 Bad Request",
+  '400_title' => "Bad Request",
+  '401_header' => "HTTP/1.0 401 Unauthorized",
+  '500_header' => "HTTP/1.1 500 Internal Server Error",
+
+  // help text
+  'no_profile_fixes' => 
+    "<strong>Possible solutions:</strong>
+     <ul><li>Check that the username is spelled correctly.</li></ul>",
+
+  'no_username_fixes' => 
+    "<strong>Possible solutions:</strong>
+     <ul><li>Check the URL; it should be of the form:<br/>
+         &nbsp; <strong>http://theprofile.co.uk/p/<em>username</em></strong>",
+             
+  'error_unknown' =>
+    "<strong>Likely causes of this error:</strong>
+    <ul><li>No further information available at this time.</li>
+    </ul>",
+
+  'clamshell_post_error' =>  
+    "<strong>Likely causes of this error:</strong>
+    <ul><li>There was an error posting data to the OpenID server.</li>
+    </ul>"
+
+);
+
+?>

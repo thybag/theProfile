@@ -1,0 +1,86 @@
+<?php
+/**
+ *  Locale-specific message text.
+ */
+global $text;
+$text = array(
+  // link/button text
+
+  // descriptive text
+  'yes' => "Yes",
+  'no' => "No",
+  'yes_long' => "Yes, I&#39;m sure",
+  'no_long' =>  "No, take me back",  
+  'success' => "Operation successful",
+  'confirm' => "Confirm operation",
+  'submit' => "Submit",
+  'cancel' => "Cancel",
+  'allow' => "Allow",
+  'deny' => "Deny",
+  'logout' => "Log Out",
+  'year' => "Year",
+  'month' => "Month",
+  'day' => "Day",
+
+  'male' => "Male",
+  'female' => "Female",
+  'not_specified' => "Not specified",
+
+  'user_added' => "User %%1 has been added.",
+  'user_updated' => "%%1 has been updated.",
+  'user_deleted' => "%%1 has been deleted.",
+  'user_edit_caption' => "Enter new settings and click Submit:",
+  'user_edit_openid'  => "Open ID name",
+  'msg_welcome' => "Welcome!",
+  'msg_username' => "Username",
+  'msg_password' => "Password",
+  'msg_password_check' => "Confirm password",
+  'msg_password_set' => "Set password for %%1",
+  'msg_auth_mode' => "Authentication mode",
+  'msg_auth_request_confirm' => "Site <strong>%%1</strong> is requesting to authenticate using your OpenID.  Choose your action:",
+  'msg_auth_request_validate' => "Not validated yet.  Requesting authorization...",
+  'msg_confirm_requests' => "Confirm OpenID requests?",
+  'msg_confirm_delete' => "Are you sure you want to delete OpenID for %%1?",
+  'msg_cancel_request' => "Cancelling request...",
+  'msg_cancelled_request' => "Request cancelled.",
+  'msg_init_finish' => "The OpenID profile for %%1 has been configured.",
+  'msg_login_success' => "Login successful.  Returning to point of origin...",
+  'msg_login_failure' => "Please check the username and password and try again.",
+  'msg_login_failure_perm' => "Too many password failures. Double check your authorization realm. You must restart your browser to try again.",
+  'msg_login_failure_temp' => "Too many password failures. Try again later.",
+  'msg_logging_out' => "Logging out...",
+  'msg_logged_out' => "Logged out.  Returning to theProfileÉ",
+  'msg_not_logged_in' => "You are not logged in.",
+  'msg_logged_in_as' => "You are logged in as",
+  'msg_self_login' => "You are currently logged in as this user",
+
+  'msg_simple_reg_caption' => "Enter new registration details and click Submit:",
+  'msg_simple_reg_nickname' => "Nickname",
+  'msg_simple_reg_email' => "Email",
+  'msg_simple_reg_fullname' => "Full name",
+  'msg_simple_reg_dob' => "Date of Birth",
+  'msg_simple_reg_dob_explain' => "(NB: leave blank any portion of the date that should not be set.)",
+  'msg_simple_reg_gender' => "Gender",
+  'msg_simple_reg_postcode' => "Postcode",
+  'msg_simple_reg_country' => "Country",
+  'msg_simple_reg_language' => "Language",
+  'msg_simple_reg_timezone' => "Location/Time Zone",
+  'msg_simple_reg_is_public' => "Show user details on OpenID home page?",  
+
+  'auth_method_http_digest' => "HTTP Digest Authentication",
+  'auth_method_form' => "HTML Form",
+  
+  'msg_no_mode' =>
+    "<p>This is the OpenID server endpoint for <strong>%%1</strong>.  %%4</p>
+    <p>If you are %%1:<ul><li>You can authenticate yourself with any OpenID-compliant system
+    by entering the URL <strong>%%2</strong> as your user ID or handle.</li>
+    <li><a href='%%3'>Test your login to OpenID now</a></li></ul>
+    <p>For more information, visit the <a href='http://openid.net'>OpenID website</a>.</p>
+    </ul>",
+    
+  'msg_user_details' =>
+    "<div class='detail'><strong>Profile Details</strong><br/>%%2</div>"
+
+);
+
+?>

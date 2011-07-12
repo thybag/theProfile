@@ -1,0 +1,42 @@
+<?php
+
+/**
+ *  This is the HMACSHA1 implementation for the OpenID library.
+ *
+ *  Modifications (C) 2007 Stephen Bounds.
+ * 
+ *  Original code (C) 2005 JanRain <openid@janrain.com>
+ *  Licensed under the LGPL.
+ */
+
+define('SHA1_BLOCKSIZE', 64);
+
+/**
+ * Compute an HMAC/SHA1 hash.
+ */
+function hmac($key, $text)
+{
+    if (strlen($key) > SHA1_BLOCKSIZE) {
+        $key = _sha1($key);
+    }
+
+    $key = str_pad($key, SHA1_BLOCKSIZE, chr(0x00));
+    $ipad = str_repeat(chr(0x36), SHA1_BLOCKSIZE);
+    $opad = str_repeat(chr(0x5c), SHA1_BLOCKSIZE);
+    $hash1 = _sha1(($key ^ $ipad) . $text);
+    $hmac = _sha1(($key ^ $opad) . $hash1);
+    return $hmac;
+}
+
+function _sha1($text) {
+  $hex = sha1($text);
+  $raw = '';
+  for ($i = 0; $i < 40; $i += 2) {
+    $hexcode = substr($hex, $i, 2);
+    $charcode = (int)base_convert($hexcode, 16, 10);
+    $raw .= chr($charcode);
+  }
+  return $raw;
+}
+
+?>

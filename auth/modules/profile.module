@@ -1,0 +1,275 @@
+<?php
+
+/**
+ *  OpenID profile handling
+ *
+ * 	SQL Modifications (C) 2010-2011 Carl Saggs
+ *
+ *  Modifications (C) 2007-2008 Stephen Bounds.
+ * 
+ *  Original code (C) 2005 JanRain <openid@janrain.com>
+ *  Licensed under the LGPL.
+ */
+ 
+ 
+//Include SQL DB class.
+ include("sqlDB.php");
+ include("../app/config/database.php");
+ 
+ 
+function read_user_profile() {
+  if (isset($_GET['admin']) && !t('authorized')) {
+    $user = conf('opt_user_admin');
+  } else {
+    $user = t('auth_username');
+  }
+
+  if (!$user) $user = $_REQUEST['u'];
+  if (!$user) $user = $_SESSION['auth_username'];
+  if (!$user && t('opt_user_default')) $user = t('opt_user_default');
+  set_t('auth_username', $user);
+
+  //Get DB credentals
+  $dbConfObj = new DATABASE_CONFIG();
+  $dbConf = $dbConfObj->default;
+  
+  //Use credentals to create a new mysql DB connection.
+  $db = new sqlDB($dbConf['host'],$dbConf['login'], $dbConf['password'], $dbConf['database']);
+  
+  //Attempt to select current user from database.
+  $db->query("SELECT * FROM users WHERE username='{$db->cleanString($user)}'");
+  
+  //if no use found, return false.
+  if($db->countRows() != 1){ 
+		return FALSE;
+  }else {
+  	  //If a user is found, get the record and set the username and pw hash so we can authenticate them.
+ 	  $current_user = $db->fetchRow();
+ 	  
+      set_t("auth_username", $current_user['username']);
+      set_t("auth_password", $current_user['password']);
+      set_t("auth_confirm", "");
+      
+	  //Set blank params (these are unused in our implimention)
+      $params = unserialize("a:0:{}");
+      foreach ($params as $key => $value) {
+        set_t("openid.$key", $value);
+      }
+		
+	//Grab identity, avatar and primary email if it exists
+	//SQL FU!
+	  $db->query("
+	  	SELECT * FROM 
+	  		(SELECT * FROM identities i
+			LEFT JOIN 
+				(SELECT email, `primary`, identity_id, valid 
+				FROM emails 
+				WHERE `primary` = 1) em
+			ON 	em.identity_id=i.id) idnt
+			LEFT JOIN (
+				SELECT name AS imgName, url AS imgURL ,identity_id 
+				FROM images) img
+			ON 	img.identity_id=idnt.id 	
+		WHERE idnt.id =  '".$current_user['profile_default']."'
+		");
+		
+	  //Get returned row.
+      $ident = $db->fetchRow();
+
+      //If primary email is set, use that. Else use registering email.
+ 	  $p_email = ($ident['primary'] != '1' ? $current_user['email'] : $ident['email']);
+	  set_t("openid.sreg.email", $p_email);
+	  
+	  //Get avatar location
+	  if($ident['imgURL'] != null ){
+	  	$avatar = $ident['imgURL'];
+	  }else{
+	  	//Attempt to work out where the uploads folder will be
+	  	$imgbasedir = $_SERVER["HTTP_HOST"].str_replace('auth/clamshell.php','',$_SERVER['PHP_SELF']);
+	  	//format avatar url.
+	  	$avatar = 'http://'.$imgbasedir.'img/uploads/'.$ident['imgName'];
+	  }
+	  // Format gender responce as according to
+	  //  http://openid.net/specs/openid-simple-registration-extension-1_0.html#response_format
+	  if(strtolower($ident['gender']) == 'female'){
+      	$ident['gender'] = 'F';
+      }elseif(strtolower($ident['gender']) == 'male'){
+      	$ident['gender'] = 'M';
+      }
+		
+	  //Supply basic sreg data.
+	  set_t("openid.sreg.nickname", $ident['nickname']);
+	  set_t("openid.sreg.email", 	$ident['email']);
+      set_t("openid.sreg.fullname", $ident['first_name']." ".$ident['last_name']);
+      set_t("openid.sreg.dob", 		$ident['dob']);
+      set_t("openid.sreg.gender", 	$ident['gender']); 
+      set_t("openid.sreg.timezone", $ident['timezone']);
+      set_t("openid.sreg.language", $ident['language']);
+		
+	  //Pass extra values for those who use it
+	  set_t("openid.sreg.avatar", 	$avatar);
+	  set_t("openid.sreg.photo", 	$avatar);
+	  set_t("openid.sreg.image", 	$avatar);
+	  set_t("openid.sreg.title", 	$ident['title']);
+	  set_t("openid.sreg.tagline", 	$ident['tagline']);
+	  
+      set_t("openid.sreg.public", "TRUE");
+  
+	if (t('auth_username') && t('auth_password')) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
+  
+  /*
+  $fn = "users/$user.auth";
+  $authfile = @fopen($fn, "r");      
+  if (!$authfile) {
+    return FALSE;
+  } else {
+    $content = @fread($authfile, filesize($fn));
+    if ($content) {
+      list($auth, $params, $simple_reg) = preg_split("/[\r\n]+/", $content);
+
+      $auth = unserialize($auth);
+      foreach ($auth as $key => $value) {
+        set_t($key, $value);
+      }
+
+      $params = unserialize($params);
+      foreach ($params as $key => $value) {
+        set_t("openid.$key", $value);
+      }
+
+      $simple_reg = unserialize($simple_reg);
+      foreach ($simple_reg as $key => $value) {
+        set_t("openid.sreg.$key", $value);
+      }
+    }
+    @fclose($authfile);
+
+    if (t('auth_username') && t('auth_password')) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
+  
+  */
+}
+
+function write_user_profile($user, $auth, $params = NULL, $simple_reg = NULL) {
+  $fn = "users/$user.auth";
+  $authfile = @fopen($fn, "w");
+  if (!$authfile) {
+    $pass = $_POST['pwd'];
+    if (!$pass) $pass = $_SESSION['auth_password'];
+    set_t('auth_password', $pass);
+    return FALSE;
+  } else {
+    if (!$auth) return FALSE;
+    fwrite($authfile, serialize($auth));
+    fwrite($authfile, "\n");
+    if (!$params) $params = array();
+    fwrite($authfile, serialize($params));
+    fwrite($authfile, "\n");
+    if (!$simple_reg) $simple_reg = simple_reg_builder();
+    fwrite($authfile, serialize($simple_reg));
+    @fclose($authfile);
+    return TRUE;
+  }
+}
+
+function delete_user_profile($user) {
+  unset($_SESSION['openid-admin']['nonce']);
+  $fn = "users/$user.auth";
+  return @unlink($fn);
+}
+
+function generate_profile($user, $pass = NULL, $mode = NULL, $confirm = NULL) {
+  debug("Generating profile for user $user with password $pass in realm ".t('php_realm'));
+  $profile["auth_username"] = $user;
+
+  $profile["auth_password"] = (isset($pass) ? md5(s("%%1:%%2:%%3", $user, t('php_realm'), $pass)) : t('auth_password'));
+  debug('Generated md5 '.$profile["auth_password"]);
+
+  $profile["auth_mode"] = (isset($mode) ? $mode : t('auth_mode'));
+  $profile["auth_confirm"] = (isset($confirm) ? ($confirm=='yes' ? TRUE : FALSE) : t('auth_confirm'));
+  return $profile;
+}
+
+function list_profiles() {
+  $authdir = opendir(getcwd()."/users");
+  $userlist = array();
+  while ($file = readdir($authdir)) {
+    if (preg_match(s("/^(.*)%%1$/", '.auth'), $file, $matches)) {
+      array_push($userlist, $matches[1]);
+    }  
+  }
+  asort($userlist);
+  return $userlist;
+}
+
+function exist_profile($test) {
+  foreach(list_profiles() as $user) {
+    if ($test == $user) return TRUE;
+  }
+  return FALSE;
+}
+
+function set_profile() {
+  // Set any remaining profile values
+  $port = ((isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == 'on' && $_SERVER['SERVER_PORT'] == 443)
+      || $_SERVER['SERVER_PORT'] == 80)
+      ? ''
+      : ':' . $_SERVER['SERVER_PORT'];
+
+  $proto = (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == 'on') ? 'https' : 'http';
+
+
+
+
+
+
+
+  if (t('opt_short_openid')) {
+    $idp = s("%%1://%%2%%3%%4/%%5", 
+          $proto, $_SERVER['SERVER_NAME'], $port, 
+          $_SERVER['PHP_SELF'], t('auth_username'));
+    set_t('idp_url', preg_replace('#/clamshell.php#', '', $idp));
+  } else {
+  
+  
+  
+    set_t('idp_url', s("%%1://%%2%%3%%4?u=%%5", 
+          $proto, $_SERVER['SERVER_NAME'], $port, 
+          $_SERVER['PHP_SELF'], t('auth_username')) );  
+  }
+
+  set_t('req_url', s("%%1://%%2%%3%%4",
+        $proto, $_SERVER['HTTP_HOST'],
+        $port, $_SERVER["REQUEST_URI"]) );
+
+  if (!t('auth_domain')) set_t('auth_domain', t("%%1 %%2", 'req_url', 'idp_url'));
+  if (!t('auth_realm'))  set_t('auth_realm', 'Clamshell');
+  if (!t('lifetime'))    set_t('lifetime', (session_cache_expire() * 60) - 10);
+  if ( t('opt_debug'))   set_t('logfile', sys_get_temp_dir() . DIRECTORY_SEPARATOR . t('auth_realm') . '.debug.log');
+
+  // These are used internally and cannot be overridden
+  set_t('authorized', FALSE);
+  set_t('php_realm', s("%%1%%2", t('auth_realm'), (ini_get('safe_mode') ? '-' . getmyuid() : '')));
+}
+
+function display_user_profile() {
+  $table = "<table>";
+
+  foreach (t('opt_profile_display') as $row) {
+    $table .= t("<tr><th>%%1</th><td>%%2</td></tr>", "msg_simple_reg_$row", "openid.sreg.$row");
+  }
+  $table .= "</table>";  
+ 
+  return s(t('msg_user_details'), t('auth_username'), $table);
+}
+
+?>

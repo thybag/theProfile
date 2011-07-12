@@ -1,0 +1,412 @@
+<?php
+/*
+ * Routines for each OpenID mode
+ * Licensed under the GPL [http://www.gnu.org/licenses/gpl.html]
+ */
+
+require_once 'constants.module';
+require_once 'authentication.module';
+
+set_t('openid.opt.assoc_types', array('HMAC-SHA1') );
+set_t('openid.opt.modes', array('associate',
+                        'authorize',
+                        'cancel',
+                        'checkid_immediate',
+                        'checkid_setup',
+                        'check_authentication',
+                        'error',
+                        'id_res',
+                        'login',
+                        'logout' ) );
+
+set_t('openid.opt.session_types', array('', 'DH-SHA1') );
+set_t('openid.opt.bigmath_types', array('DH-SHA1') );
+
+/**
+ *  Functions to handle OpenID modes
+ */
+
+function associate_mode() {
+  global $BigMath;
+
+  // Get the options, use defaults as necessary
+  $assoc_type = ( @strlen($_POST['openid_assoc_type'])
+        && in_array($_POST['openid_assoc_type'], t('openid.opt.assoc_types')) )
+      ? $_POST['openid_assoc_type']
+      : 'HMAC-SHA1';
+
+  $session_type = ( @strlen($_POST['openid_session_type'])
+          && in_array($_POST['openid_session_type'], t('openid.opt.session_types')) )
+      ? $_POST['openid_session_type']
+      : '';
+
+  $dh_modulus = (@strlen($_POST['openid_dh_modulus']))
+    ? $BigMath->btwoc_undo(base64_decode($_POST['openid_dh_modulus']))
+    : ($session_type == 'DH-SHA1'
+      ? OPENID_DH_MOD
+      : null);
+
+  $dh_gen = (@strlen($_POST['openid_dh_gen']))
+    ? $BigMath->btwoc_undo(base64_decode($_POST['openid_dh_gen']))
+    : ($session_type == 'DH-SHA1'
+      ? OPENID_DH_GEN
+      : null);
+
+  $dh_consumer_public = (@strlen($_POST['openid_dh_consumer_public']))
+    ? $BigMath->btwoc_undo(base64_decode($_POST['openid_dh_consumer_public']))
+    : ($session_type == 'DH-SHA1'
+      ? error_post('dh_consumer_public was not specified')
+      : null);
+
+  // Create the associate id and shared secret now
+  $lifetime = time() + t('lifetime');
+
+  // Create standard keys
+  $keys = array(
+    'assoc_type' => $assoc_type,
+    'expires_in' => t('lifetime')
+  );
+
+  // Add response keys based on the session type
+  switch ($session_type) {
+    case 'DH-SHA1':
+      list ($assoc_handle, $shared_secret) = new_assoc($lifetime);
+      // Compute the Diffie-Hellman stuff
+      $private_key = random($dh_modulus);
+      $public_key = $BigMath->powmod($dh_gen, $private_key, $dh_modulus);
+      $remote_key = $dh_consumer_public;
+      $ss = $BigMath->powmod($remote_key, $private_key, $dh_modulus);
+
+      $keys['assoc_handle'] = $assoc_handle;
+      $keys['session_type'] = $session_type;
+      $keys['dh_server_public'] = base64_encode($BigMath->btwoc($public_key));
+      $keys['enc_mac_key'] = base64_encode(x_or(_sha1($BigMath->btwoc($ss)), $shared_secret));
+      break;
+
+    default:
+      list ($assoc_handle, $shared_secret) = new_assoc();
+
+      $keys['assoc_handle'] = $assoc_handle;
+      $keys['mac_key'] = base64_encode($shared_secret);
+  }
+
+  // Return the keys
+  wrap_kv($keys);
+}
+
+function authorize_mode() {
+  user_session();
+
+  // the user needs refresh urls in their session to access this mode
+  if (!isset($_SESSION['post_auth_url']) || !isset($_SESSION['cancel_auth_url']))
+    error_500(err('no_mode_access'));
+
+  if (! isset($_SESSION['failures']))
+    $_SESSION['failures'] = 0;
+
+  // confirm authentication requests if required
+  if (!t('auth_confirm') === NULL) set_t('auth_confirm', t('opt_auth_confirm_default'));
+  if (t('auth_confirm')) {
+    $allow = authentication_confirm();
+  } else {
+    $allow = 'allowed';
+  }
+
+  switch ($allow) {
+    case 'allowed':
+      if (!t('auth_mode')) set_t('auth_mode', t('opt_auth_mode_default'));
+      // choose mode based on user settings
+      call_user_func('authentication_'.t('auth_mode'));;
+      break;
+    case 'denied':
+      $q = strpos($_SESSION['cancel_auth_url'], '?') ? '&' : '?';
+      wrap_refresh($_SESSION['cancel_auth_url'] . $q . 'openid.mode=cancel', t('msg_cancel_request'));
+      break;
+    case 'pending':
+      // wait for response
+      break;
+  }
+}
+
+
+function cancel_mode() {
+  wrap_html(t('msg_cancelled_request'));
+}
+
+
+function check_authentication_mode () {
+  // Validate the request
+  if (!isset($_REQUEST['openid_mode']) || $_REQUEST['openid_mode'] != 'check_authentication')
+    error_400();
+
+  $assoc_handle = @strlen($_REQUEST['openid_assoc_handle'])
+    ? $_REQUEST['openid_assoc_handle']
+    : error_post(s(err('missing'), 'assoc_handle'));
+
+  $sig = @strlen($_REQUEST['openid_sig'])
+    ? $_REQUEST['openid_sig']
+    : error_post(s(err('missing'), 'sig'));
+
+  $signed = @strlen($_REQUEST['openid_signed'])
+    ? $_REQUEST['openid_signed']
+    : error_post(s(err('missing'), 'signed'));
+
+  // Prepare the return keys
+  $keys = array(
+    'openid.mode' => 'id_res'
+  );
+
+  // Invalidate the assoc handle if we need to
+  if (@strlen($_REQUEST['openid_invalidate_handle'])) {
+    destroy_assoc_handle($_REQUEST['openid_invalidate_handle']);
+
+    $keys['invalidate_handle'] = $_REQUEST['openid_invalidate_handle'];
+  }
+
+  // Validate the sig by recreating the kv pair and signing
+  $_REQUEST['openid_mode'] = 'id_res';
+  $tokens = '';
+  foreach (explode(',', $signed) as $param) {
+    $post = preg_replace('/\./', '_', $param);
+    $tokens .= sprintf("%s:%s\n", $param, $_REQUEST['openid_' . $post]);
+  }
+
+  // Add the simple_reg stuff, if we've got it
+  foreach (explode(',', $sreg_required) as $key) {
+      if (! isset($sreg[$key]))
+        continue;
+      $skey = 'sreg.' . $key;
+
+      $tokens .= sprintf("%s:%s\n", $skey, $sreg[$key]);
+      $keys[$skey] = $sreg[$key];
+      $fields[] = $skey;
+  }
+
+  list ($shared_secret, $expires) = secret($assoc_handle);
+
+  // A 'smart mode' id will have an expiration time set, don't allow it
+  if ($shared_secret == false || is_numeric($expires)) {
+    $keys['is_valid'] = 'false';
+
+  } else {
+    $ok = base64_encode(hmac($shared_secret, $tokens));
+    $keys['is_valid'] = ($sig == $ok) ? 'true' : 'false';
+  }
+
+  // Return the keys
+  wrap_kv($keys);
+}
+
+
+function checkid($wait) {
+  debug("checkid: $wait");
+
+  user_session();
+
+  // Get the options, use defaults as necessary
+  $return_to = @strlen($_GET['openid_return_to'])
+    ? $_GET['openid_return_to']
+    : error_400(s(err('missing'), 'return_to'));
+
+  $identity = @strlen($_GET['openid_identity'])
+      ? $_GET['openid_identity']
+      : error_get($return_to, s(err('missing'), 'identity'));
+
+  $assoc_handle = @strlen($_GET['openid_assoc_handle'])
+      ? $_GET['openid_assoc_handle']
+      : null;
+
+  $trust_root = @strlen($_GET['openid_trust_root'])
+      ? $_GET['openid_trust_root']
+      : $return_to;
+
+  $sreg_required = @strlen($_GET['openid_sreg_required'])
+      ? $_GET['openid_sreg_required']
+      : '';
+
+  $sreg_optional = @strlen($_GET['openid_sreg_optional'])
+      ? $_GET['openid_sreg_optional']
+      : '';
+
+  // required and optional make no difference to us
+  $sreg_required .= ',' . $sreg_optional;
+
+  // Check the return_to is a descendent of trust_root
+  if (!trustroot_isSane($trust_root) || !trustroot_match($trust_root, $return_to))
+    error_get($return_to, s(err('invalid_trust'), $return_to));
+
+/*
+echo $identity.'<br>';
+echo t('idp_url').'<br>';
+echo "http://theprofile.co.uk/p/".t('auth_username')."/".'<br>';
+die();
+*/
+  // make sure i am this identifier (or a known rewritten version of same)
+  if (!($identity == t('idp_url') || matchId($identity, t('idp_url')) || $identity == "http://theprofile.co.uk/p/".t('auth_username')."/"))
+    error_get($return_to, s(err('invalid_identity'), $identity));
+
+  // begin setting up return keys
+  $keys = array(
+    'mode' => 'id_res'
+  );
+
+  // if the user is not logged in, transfer to the authorization mode
+  if (!t('authorized') || !matchId($identity, $_SESSION['auth_url'])) {
+    // users can only be logged in to one url at a time
+    $_SESSION['auth_username'] = null;
+    $_SESSION['auth_url'] = null;
+
+    if ($wait) {
+      $requester = authentication_requesting_host();
+      $_SESSION['cancel_auth_url'] = $return_to;
+      $_SESSION['post_auth_url'] = t('req_url');
+      unset($_SESSION['openid'][$requester]['nonce']);
+
+      debug('Transferring to authorization mode.');
+      debug('Cancel URL: ' . $_SESSION['cancel_auth_url']);
+      debug('Post URL: ' . $_SESSION['post_auth_url']);
+
+      $q = strpos(t('idp_url'), '?') ? '&' : '?';
+      wrap_refresh(t('idp_url') . $q . 'openid.mode=authorize', t('msg_auth_request_validate'));
+    } else {
+      $keys['user_setup_url'] = t('idp_url');
+    }
+
+  // the user is logged in
+  } else {
+    // remove the refresh URLs if set
+    unset($_SESSION['cancel_auth_url']);
+    unset($_SESSION['post_auth_url']);
+
+    // check the assoc handle
+    list($shared_secret, $expires) = secret($assoc_handle);
+    if ($shared_secret == false || (is_numeric($expires) && $expires < time())) {
+      if ($assoc_handle != null) $keys['invalidate_handle'] = $assoc_handle;
+      list ($assoc_handle, $shared_secret) = new_assoc();
+    }
+
+    $keys['identity'] = t('idp_url');
+    $keys['assoc_handle'] = $assoc_handle;
+    $keys['return_to'] = $return_to;
+
+    $fields = array_keys($keys);
+    $tokens = '';
+    foreach ($fields as $key)
+      $tokens .= sprintf("%s:%s\n", $key, $keys[$key]);
+
+    // get sreg keys from profile
+    if ($sreg_required) include_once 'registration.module';
+    $sreg = simple_reg_builder();
+    foreach (explode(',', $sreg_required) as $key) {
+      if (! isset($sreg[$key]))
+        continue;
+      $skey = 'sreg.' . $key;
+
+      $tokens .= sprintf("%s:%s\n", $skey, $sreg[$key]);
+      $keys[$skey] = $sreg[$key];
+      $fields[] = $skey;
+    }
+
+    $keys['signed'] = implode(',', $fields);
+    $keys['sig'] = base64_encode(hmac($shared_secret, $tokens));
+  }
+
+  wrap_location($return_to, $keys);
+}
+
+function matchId($id, $authId) {
+  $id = preg_replace('#clamshell.php\?u=#', '', $id);
+  $id = preg_replace('#/?\?u=#', '/', $id);
+  $authId = preg_replace('#clamshell.php\?u=#', '', $authId);
+  $authId = preg_replace('#/?\?u=#', '/', $authId);
+  return ($id == $authId);
+}
+
+function checkid_immediate_mode() {
+  if (!isset($_GET['openid_mode']) || $_GET['openid_mode'] != 'checkid_immediate')
+    error_500();
+  checkid(false);
+}
+
+
+function checkid_setup_mode() {
+  if (!isset($_GET['openid_mode']) || $_GET['openid_mode'] != 'checkid_setup')
+    error_500();
+  checkid(true);
+}
+
+
+function error_mode() {
+  isset($_REQUEST['openid_error']) 
+    ? wrap_html($_REQUEST['openid_error'])
+    : error_500();
+}
+
+
+function id_res_mode() {
+  user_session();
+
+  if (t('authorized')) {
+    $q = strpos(t('idp_url'), '?') ? '&' : '?';
+    $url = t('idp_url') . $q . http_build_query(append_openid(array('mode' => 'logout')), '', '&');
+    wrap_html(s('<p>%%1 %%2</p><p>
+      <form method="post" action="%%3">
+        <input type="submit" value="%%5" />
+      </form></p>', 
+      t('msg_logged_in_as'), $_SESSION['auth_username'], $url, t('logout')
+    ) );
+  }
+
+  wrap_html(t('msg_not_logged_in'));
+}
+
+
+function login_mode() {
+  user_session();
+
+  if (t('authorized'))
+    id_res_mode();
+
+  $keys = array(
+    'mode' => 'checkid_setup',
+    'identity' => t('idp_url'),
+    'return_to' => t('idp_url')
+  );
+
+  wrap_location(t('idp_url'), $keys);
+}
+
+
+function logout_mode() {
+  user_session();
+
+  if (!t('authorized'))
+    wrap_html(t('msg_not_logged_in'));
+
+  user_session_destroy();
+
+  //header(t(''401_header'));
+  wrap_refresh(t('idp_url'), t('msg_logging_out'));
+}
+
+
+function no_mode() {
+  $explain = '';
+  
+  // show user profile if enabled
+  if (t('openid.sreg.public') || (!t('openid.sreg.public') && t('opt_profile_public_default'))) {
+    $explain = display_user_profile();
+  }
+  
+  $explain .= s(t('msg_no_mode'), 
+     t('auth_username'), t('idp_url'), _nomode_build_login($url), 
+     (t('authorized') ? t('msg_self_login') : '') );
+  wrap_html($explain, t('msg_welcome'));
+}
+
+function _nomode_build_login($url) {
+  $q = strpos($url, '?') ? '&' : '?'; 
+  return ($url . $q . "openid.mode=login" . (strpos($url, "u=") ? '' : t("&u=%%1", 'auth_username')));
+}
+
+?>

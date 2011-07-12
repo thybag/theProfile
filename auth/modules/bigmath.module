@@ -1,0 +1,299 @@
+<?php
+/**
+ *  BigMath: A math library wrapper that abstracts out the underlying
+ *  long integer library.
+ *
+ *  PHP versions 4 and 5
+ *
+ *  Modifications (C) 2007 Stephen Bounds.
+ * 
+ *  Original code (C) 2005 JanRain <openid@janrain.com>
+ *  Licensed under the LGPL.
+ */
+
+/**
+ *  Base BigMath class which will be extended by a big-integer math library
+ *  such as bcmath or gmp. 
+ */
+class BigMath {
+
+  /**
+   *  btwoc - shortest big-endian two's complement representation of arbitrary
+   *          precision positive integer (see OpenID 2.0 spec section 4.2)
+   */    
+  function btwoc($long) {
+    $cmp = $this->cmp($long, 0);
+
+    if ($cmp < 0) {
+      trigger_error(__FUNCTION__ . " takes only positive integers.", E_USER_ERROR);
+      return null;
+    }
+
+    if ($cmp == 0) return "\x00";
+
+    $bytes = array();
+
+    while ($this->cmp($long, 0) > 0) {
+      array_unshift($bytes, $this->mod($long, 256));
+      $long = $this->div($long, 256);
+    }
+
+    if ($bytes && ($bytes[0] > 127)) {
+      array_unshift($bytes, 0);
+    }
+
+    // Convert to \xHH\xHH... format and return
+    $string = '';
+    foreach ($bytes as $byte) {
+      $string .= pack('C', $byte);
+    }
+    return $string;
+  }
+
+  /**
+   *  btwoc_undo - inverse of btwoc()
+   */
+  function btwoc_undo($str) {
+    if ($str == NULL) return NULL;
+
+    // Use array_merge to return a zero-indexed array instead of a
+    // one-indexed array.
+    $bytes = array_merge(unpack('C*', $str));
+
+    $n = $this->init(0);
+
+    if ($bytes && ($bytes[0] > 127)) {
+      trigger_error("bytesToNum works only for positive integers.",
+           E_USER_WARNING);
+      return null;
+    }
+
+    foreach ($bytes as $byte) {
+      $n = $this->mul($n, 256);
+      $n = $this->add($n, $byte);
+    }
+
+    return $n;
+  }
+
+  /**
+   * Returns a random number up to a value of $max.
+   */
+  function rand($max) {
+    static $duplicate_cache = array();
+
+    // Used as the key for the duplicate cache
+    $rbytes = $this->btwoc($max);
+
+    if (array_key_exists($rbytes, $duplicate_cache)) {
+      list($duplicate, $nbytes) = $duplicate_cache[$rbytes];
+    } else {
+      if ($rbytes[0] == "\x00") {
+        $nbytes = strlen($rbytes) - 1;
+      } else {
+        $nbytes = strlen($rbytes);
+      }
+
+      $mxrand = $this->pow(256, $nbytes);
+
+      // If we get a number less than this, then it is in the
+      // duplicated range.
+      $duplicate = $this->mod($mxrand, $max);
+
+      if (count($duplicate_cache) > 10) {
+        $duplicate_cache = array();
+      }
+
+      $duplicate_cache[$rbytes] = array($duplicate, $nbytes);
+    }
+
+    do {
+      $bytes = "\x00" . $this->getRandomBytes($nbytes);
+      $n = $this->btwoc_undo($bytes);
+      // Keep looping if this value is in the low duplicated range
+    } while ($this->cmp($n, $duplicate) < 0);
+
+    return $this->mod($n, $max);
+  }
+
+  /**
+   * Get the specified number of random bytes.
+   *
+   * Attempts to use a cryptographically secure (not predictable)
+   * source of randomness. If there is no high-entropy
+   * randomness source available, it will fail.
+   */
+  function getRandomBytes($num_bytes) {
+    static $f = null;
+    $f = @fopen('/dev/urandom', "r");
+    if ($f) {
+      return fread($f, $num_bytes);
+    } else {
+      // TODO: Investigate implementing extension for CryptoAPI
+      // http://blogs.msdn.com/michael_howard/archive/2005/01/14/353379.aspx
+      // http://devzone.zend.com/node/view/id/1021
+
+      // Comment this out to enable insecure mode (mainly for Windows)
+      if (conf('opt_secure_only')) {
+        trigger_error("no cryptographically secure random source available",
+                      E_USER_ERROR);
+      }
+      // pseudorandom used
+      $bytes = '';
+      for ($i = 0; $i < $num_bytes; $i += 4) {
+        $bytes .= pack('L', mt_rand());
+      }
+      return substr($bytes, 0, $num_bytes);
+    }      
+  }
+}
+
+/**
+ * Exposes BCmath math library functionality.
+ */
+class BigMath_BcMathWrapper extends BigMath {
+  var $type = 'bcmath';
+
+  function init($number, $base = 10) { return $number; }
+
+  function add($x, $y) { return bcadd($x, $y);  }
+  function sub($x, $y) { return bcsub($x, $y);  }
+  function mul($x, $y) { return bcmul($x, $y);  }
+  function div($x, $y) { return bcdiv($x, $y);  }
+  function cmp($x, $y) { return bccomp($x, $y); }
+
+  function mod($base, $modulus)    { return bcmod($base, $modulus); }
+  function pow($base, $exponent)   { return bcpow($base, $exponent); }
+
+  function powmod($base, $exponent, $modulus) {
+    return (function_exists('bcpowmod') 
+      ? bcpowmod($base, $exponent, $modulus) 
+      : $this->_powmod($base, $exponent, $modulus) );
+  }
+
+  function toString($num) { return $num; }
+
+  /**
+   *  PHP4 replacement for bcpowmod
+   */
+  function _powmod($base, $exponent, $modulus) {
+    $square = $this->mod($base, $modulus);
+    $result = 1;
+    while($this->cmp($exponent, 0) > 0) {
+      if ($this->mod($exponent, 2)) {
+        $result = $this->mod($this->mul($result, $square), $modulus);
+      }
+      $square = $this->mod($this->mul($square, $square), $modulus);
+      $exponent = $this->div($exponent, 2);
+    }
+    return $result;
+  }
+}
+
+/**
+ * Exposes GMP math library functionality.
+ */
+class BigMath_GmpMathWrapper extends BigMath {
+  var $type = 'gmp';
+
+  function init($number, $base = 10) {  return gmp_init($number, $base); }
+
+  function add($x, $y) { return gmp_add($x, $y);   }
+  function sub($x, $y) { return gmp_sub($x, $y);   }
+  function mul($x, $y) { return gmp_mul($x, $y);   }
+  function div($x, $y) { return gmp_div_q($x, $y); }
+  function cmp($x, $y) { return gmp_cmp($x, $y);   }
+
+  function mod($base, $modulus)  { return gmp_mod($base, $modulus);  }
+  function pow($base, $exponent) { return gmp_pow($base, $exponent); }
+
+  function powmod($base, $exponent, $modulus) {
+    return gmp_powm($base, $exponent, $modulus);
+  }
+
+  function toString($num) { return gmp_strval($num); }
+}
+
+
+/**
+ * Detect which math library is available
+ */
+function BigMath_Detect()
+{
+  /**
+   * Define the supported extensions.  An extension array has keys
+   * 'modules', 'extension', and 'class'.  'modules' is an array of PHP
+   * module names (without file extension) which the loading code 
+   * will attempt to load. 'extension' is the name of a PHP extension 
+   * which will be tested before 'modules' are loaded.  
+   * 'class' is the string name of a BigMath subclass which should be
+   * instantiated if a given extension is present.
+   *
+   * You can define new math library implementations and add them to
+   * this array.
+   */
+  $extensions = array(
+  array('modules' => array('gmp', 'php_gmp'),
+      'extension' => 'gmp',
+      'class' => 'BigMath_GmpMathWrapper'),
+  array('modules' => array('bcmath', 'php_bcmath'),
+      'extension' => 'bcmath',
+      'class' => 'BigMath_BcMathWrapper')
+  );
+
+  $loaded = false;
+
+  foreach ($extensions as $ext) {
+    // See if the extension specified is already loaded.
+    if ($ext['extension'] &&
+      extension_loaded($ext['extension'])) {
+      $loaded = true;
+    }
+
+    // Try to load dynamic modules.
+    if (!$loaded) {
+      foreach ($ext['modules'] as $module) {
+        if (@dl($module . "." . PHP_SHLIB_SUFFIX)) {
+          $loaded = true;
+          break;
+        }
+      }
+    }
+
+    // If the load succeeded, supply an instance of
+    // BigMath which wraps the specified
+    // module's functionality.
+    if ($loaded) {
+      return $ext;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Returns an instance of the best possible BigMath class
+ * If possible, the BigMath_BcMathWrapper is chosen.
+ */
+function &BigMath()
+{
+  // The instance of BigMath_xxxMathWrapper that we choose to
+  // supply will be stored here, so that subseqent calls to this
+  // method will return a reference to the same object.
+  static $lib = null;
+
+  if (isset($lib)) {
+    return $lib;
+  }
+
+  $ext = BigMath_Detect();
+  $class = $ext['class'];
+  $lib = new $class();
+
+  return $lib;
+}
+
+global $BigMath;
+$BigMath = BigMath();
+
+?>

@@ -1,0 +1,994 @@
+<?php
+/*
+ * Dropdowns and associated functions used for registration data.
+ * 
+ * Licensed under the GPL [http://www.gnu.org/licenses/gpl.html]
+ */
+
+function simple_reg_builder() {
+  $keys = array('nickname', 'email', 'fullname', 'dob', 'gender', 
+                'postcode', 'country', 'language', 'timezone');
+
+  $sreg = array();
+  foreach ($keys as $key) {
+    if (t('openid.sreg.'.$key)) $sreg[$key] = t('openid.sreg.'.$key);
+  }
+  return $sreg;
+}
+
+function simple_reg_dob_choice() {
+  list($year, $month, $day) = simple_reg_dob_to_array(t('openid.sreg.dob'));
+  return s(
+    '<table class="tabular"><tr><td>%%4</td><td>%%5</td><td>%%6</td></tr>
+     <tr><td><input size="4" maxlength="4" name="sreg[dob][year]" value="%%1" /></td>
+         <td><input size="2" maxlength="2" name="sreg[dob][month]" value="%%2" /></td>
+         <td><input size="2" maxlength="2" name="sreg[dob][day]" value="%%3" /></td></tr></table>
+     %%7',
+    $year, $month, $day,
+    t('year'), t('month'), t('day'),
+    t('msg_simple_reg_dob_explain')
+  );
+
+}
+
+function simple_reg_dob_to_string($arr) {
+  if ($arr['year'] < 0) $arr['year'] = 0;
+  if ($arr['month'] < 0) $arr['month'] = 0;
+  if ($arr['month'] > 12) $arr['month'] = 12;
+  if ($arr['day'] < 0) $arr['day'] = 0;
+  if ($arr['day'] > 31) $arr['day'] = 31;
+  if ($arr['day'] > 0 && $arr['month'] > 0 && $arr['year'] > 0 && 
+      !checkdate($arr['month'], $arr['day'], $arr['year'])) {
+    $arr['day'] = 0;
+  }
+  return sprintf("%04s-%02s-%02s", intval($arr['year']), intval($arr['month']), intval($arr['day']));
+}
+
+function simple_reg_dob_to_array($str) {
+  return array(intval(substr($str, 0, 4)), intval(substr($str, 5, 2)), intval(substr($str, 8, 2)));
+}
+
+function simple_reg_gender_choice() {
+  return s(
+    '<select name="sreg[gender]">
+       <option value="" %%4>%%1</option>
+       <option value="M" %%5>%%2</option>
+       <option value="F" %%6>%%3</option>
+     </select>',
+     t('not_specified'),
+     t('male'),
+     t('female'),
+     (t('openid.sreg.gender')=='' ? 'selected="selected"' : ''),
+     (t('openid.sreg.gender')=='M' ? 'selected="selected"' : ''),
+     (t('openid.sreg.gender')=='F' ? 'selected="selected"' : '')
+  );
+}
+
+function simple_reg_country_choice() {
+  $c = t('openid.sreg.country');
+  $s = ' selected="selected"';
+  return
+    '<select name="sreg[country]">
+       <option value="AF"'.($c == "AF" ? $s : "").'>Afghanistan</option>
+       <option value="AX"'.($c == "AX" ? $s : "").'>&#197;land Islands</option>
+       <option value="AL"'.($c == "AL" ? $s : "").'>Albania</option>
+       <option value="DZ"'.($c == "DZ" ? $s : "").'>Algeria</option>
+       <option value="AS"'.($c == "AS" ? $s : "").'>American Samoa</option>
+       <option value="AD"'.($c == "AD" ? $s : "").'>Andorra</option>
+       <option value="AO"'.($c == "AO" ? $s : "").'>Angola</option>
+       <option value="AI"'.($c == "AI" ? $s : "").'>Anguilla</option>
+       <option value="AQ"'.($c == "AQ" ? $s : "").'>Antarctica</option>
+       <option value="AG"'.($c == "AG" ? $s : "").'>Antigua and Barbuda</option>
+       <option value="AR"'.($c == "AR" ? $s : "").'>Argentina</option>
+       <option value="AM"'.($c == "AM" ? $s : "").'>Armenia</option>
+       <option value="AW"'.($c == "AW" ? $s : "").'>Aruba</option>
+       <option value="AU"'.($c == "AU" ? $s : "").'>Australia</option>
+       <option value="AT"'.($c == "AT" ? $s : "").'>Austria</option>
+       <option value="AZ"'.($c == "AZ" ? $s : "").'>Azerbaijan</option>
+       <option value="BS"'.($c == "BS" ? $s : "").'>Bahamas</option>
+       <option value="BH"'.($c == "BH" ? $s : "").'>Bahrain</option>
+       <option value="BD"'.($c == "BD" ? $s : "").'>Bangladesh</option>
+       <option value="BB"'.($c == "BB" ? $s : "").'>Barbados</option>
+       <option value="BY"'.($c == "BY" ? $s : "").'>Belarus</option>
+       <option value="BE"'.($c == "BE" ? $s : "").'>Belgium</option>
+       <option value="BZ"'.($c == "BZ" ? $s : "").'>Belize</option>
+       <option value="BJ"'.($c == "BJ" ? $s : "").'>Benin</option>
+       <option value="BM"'.($c == "BM" ? $s : "").'>Bermuda</option>
+       <option value="BT"'.($c == "BT" ? $s : "").'>Bhutan</option>
+       <option value="BO"'.($c == "BO" ? $s : "").'>Bolivia</o""? ? $s :ption>
+       <option value="BA"'.($c == "BA" ? $s : "").'>Bosnia and Herzegovina</option>
+       <option value="BW"'.($c == "BW" ? $s : "").'>Botswana</option>
+       <option value="BV"'.($c == "BV" ? $s : "").'>Bouvet Island</option>
+       <option value="BR"'.($c == "BR" ? $s : "").'>Brazil</option>
+       <option value="IO"'.($c == "IO" ? $s : "").'>British Indian Ocean Territory</option>
+       <option value="BN"'.($c == "BN" ? $s : "").'>Brunei Darussalam</option>
+       <option value="BG"'.($c == "BG" ? $s : "").'>Bulgaria</option>
+       <option value="BF"'.($c == "BF" ? $s : "").'>Burkina Faso</option>
+       <option value="BI"'.($c == "BI" ? $s : "").'>Burundi</option>
+       <option value="KH"'.($c == "KH" ? $s : "").'>Cambodia</option>
+       <option value="CM"'.($c == "CM" ? $s : "").'>Cameroon</option>
+       <option value="CA"'.($c == "CA" ? $s : "").'>Canada</option>
+       <option value="CV"'.($c == "CV" ? $s : "").'>Cape Verde</option>
+       <option value="KY"'.($c == "KY" ? $s : "").'>Cayman Islands</option>
+       <option value="CF"'.($c == "CF" ? $s : "").'>Central African Republic</option>
+       <option value="TD"'.($c == "TD" ? $s : "").'>Chad</option>
+       <option value="CL"'.($c == "CL" ? $s : "").'>Chile</option>
+       <option value="CN"'.($c == "CN" ? $s : "").'>China</option>
+       <option value="CX"'.($c == "CX" ? $s : "").'>Christmas Island</option>
+       <option value="CC"'.($c == "CC" ? $s : "").'>Cocos (Keeling) Islands</option>
+       <option value="CO"'.($c == "CO" ? $s : "").'>Colombia</option>
+       <option value="KM"'.($c == "KM" ? $s : "").'>Comoros</option>
+       <option value="CG"'.($c == "CG" ? $s : "").'>Congo</option>
+       <option value="CD"'.($c == "CD" ? $s : "").'>Congo, The Democratic Republic of the</option>
+       <option value="CK"'.($c == "CK" ? $s : "").'>Cook Islands</option>
+       <option value="CR"'.($c == "CR" ? $s : "").'>Costa Rica</option>
+       <option value="CI"'.($c == "CI" ? $s : "").'>C&#244;te D\'ivoire</option>
+       <option value="HR"'.($c == "HR" ? $s : "").'>Croatia</option>
+       <option value="CU"'.($c == "CU" ? $s : "").'>Cuba</option>
+       <option value="CY"'.($c == "CY" ? $s : "").'>Cyprus</option>
+       <option value="CZ"'.($c == "CZ" ? $s : "").'>Czech Republic</option>
+       <option value="DK"'.($c == "DK" ? $s : "").'>Denmark</option>
+       <option value="DJ"'.($c == "DJ" ? $s : "").'>Djibouti</option>
+       <option value="DM"'.($c == "DM" ? $s : "").'>Dominica</option>
+       <option value="DO"'.($c == "DO" ? $s : "").'>Dominican Republic</option>
+       <option value="EC"'.($c == "EC" ? $s : "").'>Ecuador</option>
+       <option value="EG"'.($c == "EG" ? $s : "").'>Egypt</option>
+       <option value="SV"'.($c == "SV" ? $s : "").'>El Salvador</option>
+       <option value="GQ"'.($c == "GQ" ? $s : "").'>Equatorial Guinea</option>
+       <option value="ER"'.($c == "ER" ? $s : "").'>Eritrea</option>
+       <option value="EE"'.($c == "EE" ? $s : "").'>Estonia</option>
+       <option value="ET"'.($c == "ET" ? $s : "").'>Ethiopia</option>
+       <option value="FK"'.($c == "FK" ? $s : "").'>Falkland Islands (Malvinas)</option>
+       <option value="FO"'.($c == "FO" ? $s : "").'>Faroe Islands</option>
+       <option value="FJ"'.($c == "FJ" ? $s : "").'>Fiji</option>
+       <option value="FI"'.($c == "FI" ? $s : "").'>Finland</option>
+       <option value="FR"'.($c == "FR" ? $s : "").'>France</option>
+       <option value="GF"'.($c == "GF" ? $s : "").'>French Guiana</option>
+       <option value="PF"'.($c == "PF" ? $s : "").'>French Polynesia</option>
+       <option value="TF"'.($c == "TF" ? $s : "").'>French Southern Territories</option>
+       <option value="GA"'.($c == "GA" ? $s : "").'>Gabon</option>
+       <option value="GM"'.($c == "GM" ? $s : "").'>Gambia</option>
+       <option value="GE"'.($c == "GE" ? $s : "").'>Georgia</option>
+       <option value="DE"'.($c == "DE" ? $s : "").'>Germany</option>
+       <option value="GH"'.($c == "GH" ? $s : "").'>Ghana</option>
+       <option value="GI"'.($c == "GI" ? $s : "").'>Gibraltar</option>
+       <option value="GR"'.($c == "GR" ? $s : "").'>Greece</option>
+       <option value="GL"'.($c == "GL" ? $s : "").'>Greenland</option>
+       <option value="GD"'.($c == "GD" ? $s : "").'>Grenada</option>
+       <option value="GP"'.($c == "GP" ? $s : "").'>Guadeloupe</option>
+       <option value="GU"'.($c == "GU" ? $s : "").'>Guam</option>
+       <option value="GT"'.($c == "GT" ? $s : "").'>Guatemala</option>
+       <option value="GG"'.($c == "GG" ? $s : "").'>Guernsey</option>
+       <option value="GN"'.($c == "GN" ? $s : "").'>Guinea</option>
+       <option value="GW"'.($c == "GW" ? $s : "").'>Guinea-Bissau</option>
+       <option value="GY"'.($c == "GY" ? $s : "").'>Guyana</option>
+       <option value="HT"'.($c == "HT" ? $s : "").'>Haiti</option>
+       <option value="HM"'.($c == "HM" ? $s : "").'>Heard Island and Mcdonald Islands</option>
+       <option value="VA"'.($c == "VA" ? $s : "").'>Holy See (Vatican City State)</option>
+       <option value="HN"'.($c == "HN" ? $s : "").'>Honduras</option>
+       <option value="HK"'.($c == "HK" ? $s : "").'>Hong Kong</option>
+       <option value="HU"'.($c == "HU" ? $s : "").'>Hungary</option>
+       <option value="IS"'.($c == "IS" ? $s : "").'>Iceland</option>
+       <option value="IN"'.($c == "IN" ? $s : "").'>India</option>
+       <option value="ID"'.($c == "ID" ? $s : "").'>Indonesia</option>
+       <option value="IR"'.($c == "IR" ? $s : "").'>Iran, Islamic Republic of</option>
+       <option value="IQ"'.($c == "IQ" ? $s : "").'>Iraq</option>
+       <option value="IE"'.($c == "IE" ? $s : "").'>Ireland</option>
+       <option value="IM"'.($c == "IM" ? $s : "").'>Isle of Man</option>
+       <option value="IL"'.($c == "IL" ? $s : "").'>Israel</option>
+       <option value="IT"'.($c == "IT" ? $s : "").'>Italy</option>
+       <option value="JM"'.($c == "JM" ? $s : "").'>Jamaica</option>
+       <option value="JP"'.($c == "JP" ? $s : "").'>Japan</option>
+       <option value="JE"'.($c == "JE" ? $s : "").'>Jersey</option>
+       <option value="JO"'.($c == "JO" ? $s : "").'>Jordan</option>
+       <option value="KZ"'.($c == "KZ" ? $s : "").'>Kazakhstan</option>
+       <option value="KE"'.($c == "KE" ? $s : "").'>Kenya</option>
+       <option value="KI"'.($c == "KI" ? $s : "").'>Kiribati</option>
+       <option value="KP"'.($c == "KP" ? $s : "").'>Korea, Democratic People\'s Republic of</option>
+       <option value="KR"'.($c == "KR" ? $s : "").'>Korea, Republic of</option>
+       <option value="KW"'.($c == "KW" ? $s : "").'>Kuwait</option>
+       <option value="KG"'.($c == "KG" ? $s : "").'>Kyrgyzstan</option>
+       <option value="LA"'.($c == "LA" ? $s : "").'>Lao People\'s Democratic Republic</option>
+       <option value="LV"'.($c == "LV" ? $s : "").'>Latvia</option>
+       <option value="LB"'.($c == "LB" ? $s : "").'>Lebanon</option>
+       <option value="LS"'.($c == "LS" ? $s : "").'>Lesotho</option>
+       <option value="LR"'.($c == "LR" ? $s : "").'>Liberia</option>
+       <option value="LY"'.($c == "LY" ? $s : "").'>Libyan Arab Jamahiriya</option>
+       <option value="LI"'.($c == "LI" ? $s : "").'>Liechtenstein</option>
+       <option value="LT"'.($c == "LT" ? $s : "").'>Lithuania</option>
+       <option value="LU"'.($c == "LU" ? $s : "").'>Luxembourg</option>
+       <option value="MO"'.($c == "MO" ? $s : "").'>Macao</option>
+       <option value="MK"'.($c == "MK" ? $s : "").'>Macedonia, The Former Yugoslav Republic of</option>
+       <option value="MG"'.($c == "MG" ? $s : "").'>Madagascar</option>
+       <option value="MW"'.($c == "MW" ? $s : "").'>Malawi</option>
+       <option value="MY"'.($c == "MY" ? $s : "").'>Malaysia</option>
+       <option value="MV"'.($c == "MV" ? $s : "").'>Maldives</option>
+       <option value="ML"'.($c == "ML" ? $s : "").'>Mali</option>
+       <option value="MT"'.($c == "MT" ? $s : "").'>Malta</option>
+       <option value="MH"'.($c == "MH" ? $s : "").'>Marshall Islands</option>
+       <option value="MQ"'.($c == "MQ" ? $s : "").'>Martinique</option>
+       <option value="MR"'.($c == "MR" ? $s : "").'>Mauritania</option>
+       <option value="MU"'.($c == "MU" ? $s : "").'>Mauritius</option>
+       <option value="YT"'.($c == "YT" ? $s : "").'>Mayotte</option>
+       <option value="MX"'.($c == "MX" ? $s : "").'>Mexico</option>
+       <option value="FM"'.($c == "FM" ? $s : "").'>Micronesia, Federated States of</option>
+       <option value="MD"'.($c == "MD" ? $s : "").'>Moldova, Republic of</option>
+       <option value="MC"'.($c == "MC" ? $s : "").'>Monaco</option>
+       <option value="MN"'.($c == "MN" ? $s : "").'>Mongolia</option>
+       <option value="ME"'.($c == "ME" ? $s : "").'>Montenegro</option>
+       <option value="MS"'.($c == "MS" ? $s : "").'>Montserrat</option>
+       <option value="MA"'.($c == "MA" ? $s : "").'>Morocco</option>
+       <option value="MZ"'.($c == "MZ" ? $s : "").'>Mozambique</option>
+       <option value="MM"'.($c == "MM" ? $s : "").'>Myanmar</option>
+       <option value="NA"'.($c == "NA" ? $s : "").'>Namibia</option>
+       <option value="NR"'.($c == "NR" ? $s : "").'>Nauru</option>
+       <option value="NP"'.($c == "NP" ? $s : "").'>Nepal</option>
+       <option value="NL"'.($c == "NL" ? $s : "").'>Netherlands</option>
+       <option value="AN"'.($c == "AN" ? $s : "").'>Netherlands Antilles</option>
+       <option value="NC"'.($c == "NC" ? $s : "").'>New Caledonia</option>
+       <option value="NZ"'.($c == "NZ" ? $s : "").'>New Zealand</option>
+       <option value="NI"'.($c == "NI" ? $s : "").'>Nicaragua</option>
+       <option value="NE"'.($c == "NE" ? $s : "").'>Niger</option>
+       <option value="NG"'.($c == "NG" ? $s : "").'>Nigeria</option>
+       <option value="NU"'.($c == "NU" ? $s : "").'>Niue</option>
+       <option value="NF"'.($c == "NF" ? $s : "").'>Norfolk Island</option>
+       <option value="MP"'.($c == "MP" ? $s : "").'>Northern Mariana Islands</option>
+       <option value="NO"'.($c == "NO" ? $s : "").'>Norway</option>
+       <option value="OM"'.($c == "OM" ? $s : "").'>Oman</option>
+       <option value="PK"'.($c == "PK" ? $s : "").'>Pakistan</option>
+       <option value="PW"'.($c == "PW" ? $s : "").'>Palau</option>
+       <option value="PS"'.($c == "PS" ? $s : "").'>Palestinian Territory, Occupied</option>
+       <option value="PA"'.($c == "PA" ? $s : "").'>Panama</option>
+       <option value="PG"'.($c == "PG" ? $s : "").'>Papua New Guinea</option>
+       <option value="PY"'.($c == "PY" ? $s : "").'>Paraguay</option>
+       <option value="PE"'.($c == "PE" ? $s : "").'>Peru</option>
+       <option value="PH"'.($c == "PH" ? $s : "").'>Philippines</option>
+       <option value="PN"'.($c == "PN" ? $s : "").'>Pitcairn</option>
+       <option value="PL"'.($c == "PL" ? $s : "").'>Poland</option>
+       <option value="PT"'.($c == "PT" ? $s : "").'>Portugal</option>
+       <option value="PR"'.($c == "PR" ? $s : "").'>Puerto Rico</option>
+       <option value="QA"'.($c == "QA" ? $s : "").'>Qatar</option>
+       <option value="RE"'.($c == "RE" ? $s : "").'>Reunion</option>
+       <option value="RO"'.($c == "RO" ? $s : "").'>Romania</option>
+       <option value="RU"'.($c == "RU" ? $s : "").'>Russian Federation</option>
+       <option value="RW"'.($c == "RW" ? $s : "").'>Rwanda</option>
+       <option value="BL"'.($c == "BL" ? $s : "").'>Saint Barth&#233;lemy</option>
+       <option value="SH"'.($c == "SH" ? $s : "").'>Saint Helena</option>
+       <option value="KN"'.($c == "KN" ? $s : "").'>Saint Kitts and Nevis</option>
+       <option value="LC"'.($c == "LC" ? $s : "").'>Saint Lucia</option>
+       <option value="MF"'.($c == "MF" ? $s : "").'>Saint Martin</option>
+       <option value="PM"'.($c == "PM" ? $s : "").'>Saint Pierre and Miquelon</option>
+       <option value="VC"'.($c == "VC" ? $s : "").'>Saint Vincent and the Grenadines</option>
+       <option value="WS"'.($c == "WS" ? $s : "").'>Samoa</option>
+       <option value="SM"'.($c == "SM" ? $s : "").'>San Marino</option>
+       <option value="ST"'.($c == "ST" ? $s : "").'>Sao Tome and Principe</option>
+       <option value="SA"'.($c == "SA" ? $s : "").'>Saudi Arabia</option>
+       <option value="SN"'.($c == "SN" ? $s : "").'>Senegal</option>
+       <option value="RS"'.($c == "RS" ? $s : "").'>Serbia</option>
+       <option value="SC"'.($c == "SC" ? $s : "").'>Seychelles</option>
+       <option value="SL"'.($c == "SL" ? $s : "").'>Sierra Leone</option>
+       <option value="SG"'.($c == "SG" ? $s : "").'>Singapore</option>
+       <option value="SK"'.($c == "SK" ? $s : "").'>Slovakia</option>
+       <option value="SI"'.($c == "SI" ? $s : "").'>Slovenia</option>
+       <option value="SB"'.($c == "SB" ? $s : "").'>Solomon Islands</option>
+       <option value="SO"'.($c == "SO" ? $s : "").'>Somalia</option>
+       <option value="ZA"'.($c == "ZA" ? $s : "").'>South Africa</option>
+       <option value="GS"'.($c == "GS" ? $s : "").'>South Georgia and the South Sandwich Islands</option>
+       <option value="ES"'.($c == "ES" ? $s : "").'>Spain</option>
+       <option value="LK"'.($c == "LK" ? $s : "").'>Sri Lanka</option>
+       <option value="SD"'.($c == "SD" ? $s : "").'>Sudan</option>
+       <option value="SR"'.($c == "SR" ? $s : "").'>Suriname</option>
+       <option value="SJ"'.($c == "SJ" ? $s : "").'>Svalbard and Jan Mayen</option>
+       <option value="SZ"'.($c == "SZ" ? $s : "").'>Swaziland</option>
+       <option value="SE"'.($c == "SE" ? $s : "").'>Sweden</option>
+       <option value="CH"'.($c == "CH" ? $s : "").'>Switzerland</option>
+       <option value="SY"'.($c == "SY" ? $s : "").'>Syrian Arab Republic</option>
+       <option value="TW"'.($c == "TW" ? $s : "").'>Taiwan, Province of China</option>
+       <option value="TJ"'.($c == "TJ" ? $s : "").'>Tajikistan</option>
+       <option value="TZ"'.($c == "TZ" ? $s : "").'>Tanzania, United Republic of</option>
+       <option value="TH"'.($c == "TH" ? $s : "").'>Thailand</option>
+       <option value="TL"'.($c == "TL" ? $s : "").'>Timor-Leste</option>
+       <option value="TG"'.($c == "TG" ? $s : "").'>Togo</option>
+       <option value="TK"'.($c == "TK" ? $s : "").'>Tokelau</option>
+       <option value="TO"'.($c == "TO" ? $s : "").'>Tonga</option>
+       <option value="TT"'.($c == "TT" ? $s : "").'>Trinidad and Tobago</option>
+       <option value="TN"'.($c == "TN" ? $s : "").'>Tunisia</option>
+       <option value="TR"'.($c == "TR" ? $s : "").'>Turkey</option>
+       <option value="TM"'.($c == "TM" ? $s : "").'>Turkmenistan</option>
+       <option value="TC"'.($c == "TC" ? $s : "").'>Turks and Caicos Islands</option>
+       <option value="TV"'.($c == "TV" ? $s : "").'>Tuvalu</option>
+       <option value="UG"'.($c == "UG" ? $s : "").'>Uganda</option>
+       <option value="UA"'.($c == "UA" ? $s : "").'>Ukraine</option>
+       <option value="AE"'.($c == "AE" ? $s : "").'>United Arab Emirates</option>
+       <option value="GB"'.($c == "GB" ? $s : "").'>United Kingdom</option>
+       <option value="US"'.($c == "US" ? $s : "").'>United States</option>
+       <option value="UM"'.($c == "UM" ? $s : "").'>United States Minor Outlying Islands</option>
+       <option value="UY"'.($c == "UY" ? $s : "").'>Uruguay</option>
+       <option value="UZ"'.($c == "UZ" ? $s : "").'>Uzbekistan</option>
+       <option value="VU"'.($c == "VU" ? $s : "").'>Vanuatu</option>
+       <option value="VE"'.($c == "VE" ? $s : "").'>Venezuela</option>
+       <option value="VN"'.($c == "VN" ? $s : "").'>Viet Nam</option>
+       <option value="VG"'.($c == "VG" ? $s : "").'>Virgin Islands, British</option>
+       <option value="VI"'.($c == "VI" ? $s : "").'>Virgin Islands, U.S.</option>
+       <option value="WF"'.($c == "WF" ? $s : "").'>Wallis and Futuna</option>
+       <option value="EH"'.($c == "EH" ? $s : "").'>Western Sahara</option>
+       <option value="YE"'.($c == "YE" ? $s : "").'>Yemen</option>
+       <option value="ZM"'.($c == "ZM" ? $s : "").'>Zambia</option>
+       <option value="ZW"'.($c == "ZW" ? $s : "").'>Zimbabwe</option>
+     </select>';
+}
+
+function simple_reg_language_choice() {
+  $c = t('openid.sreg.language');
+  $s = ' selected="selected"';
+  return
+    '<select name="sreg[language]">
+       <option value="ab"'.($c == "ab" ? $s : "").'>Abkhazian</option>
+       <option value="aa"'.($c == "aa" ? $s : "").'>Afar</option>
+       <option value="af"'.($c == "af" ? $s : "").'>Afrikaans</option>
+       <option value="ak"'.($c == "ak" ? $s : "").'>Akan</option>
+       <option value="sq"'.($c == "sq" ? $s : "").'>Albanian</option>
+       <option value="am"'.($c == "am" ? $s : "").'>Amharic</option>
+       <option value="anp"'.($c == "anp" ? $s : "").'>Angika</option>
+       <option value="ar"'.($c == "ar" ? $s : "").'>Arabic</option>
+       <option value="an"'.($c == "an" ? $s : "").'>Aragonese</option>
+       <option value="hy"'.($c == "hy" ? $s : "").'>Armenian</option>
+       <option value="as"'.($c == "as" ? $s : "").'>Assamese</option>
+       <option value="av"'.($c == "av" ? $s : "").'>Avaric</option>
+       <option value="ae"'.($c == "ae" ? $s : "").'>Avestan</option>
+       <option value="ay"'.($c == "ay" ? $s : "").'>Aymara</option>
+       <option value="az"'.($c == "az" ? $s : "").'>Azerbaijani</option>
+       <option value="bm"'.($c == "bm" ? $s : "").'>Bambara</option>
+       <option value="ba"'.($c == "ba" ? $s : "").'>Bashkir</option>
+       <option value="eu"'.($c == "eu" ? $s : "").'>Basque</option>
+       <option value="be"'.($c == "be" ? $s : "").'>Belarusian</option>
+       <option value="bn"'.($c == "bn" ? $s : "").'>Bengali</option>
+       <option value="bh"'.($c == "bh" ? $s : "").'>Bihari</option>
+       <option value="bi"'.($c == "bi" ? $s : "").'>Bislama</option>
+       <option value="bs"'.($c == "bs" ? $s : "").'>Bosnian</option>
+       <option value="br"'.($c == "br" ? $s : "").'>Breton</option>
+       <option value="bg"'.($c == "bg" ? $s : "").'>Bulgarian</option>
+       <option value="my"'.($c == "my" ? $s : "").'>Burmese</option>
+       <option value="ca"'.($c == "ca" ? $s : "").'>Catalan/Valencian</option>
+       <option value="km"'.($c == "km" ? $s : "").'>Central Khmer</option>
+       <option value="ch"'.($c == "ch" ? $s : "").'>Chamorro</option>
+       <option value="ce"'.($c == "ce" ? $s : "").'>Chechen</option>
+       <option value="ny"'.($c == "ny" ? $s : "").'>Chichewa/Chewa/Nyanja</option>
+       <option value="zh"'.($c == "zh" ? $s : "").'>Chinese</option>
+       <option value="cu"'.($c == "cu" ? $s : "").'>Church Slavic/Old Slavonic</option>
+       <option value="cv"'.($c == "cv" ? $s : "").'>Chuvash</option>
+       <option value="kw"'.($c == "kw" ? $s : "").'>Cornish</option>
+       <option value="co"'.($c == "co" ? $s : "").'>Corsican</option>
+       <option value="cr"'.($c == "cr" ? $s : "").'>Cree</option>
+       <option value="hr"'.($c == "hr" ? $s : "").'>Croatian</option>
+       <option value="cs"'.($c == "cs" ? $s : "").'>Czech</option>
+       <option value="da"'.($c == "da" ? $s : "").'>Danish</option>
+       <option value="dv"'.($c == "dv" ? $s : "").'>Divehi/Dhivehi/Maldivian</option>
+       <option value="nl"'.($c == "nl" ? $s : "").'>Dutch/Flemish</option>
+       <option value="dz"'.($c == "dz" ? $s : "").'>Dzongkha</option>
+       <option value="en"'.($c == "en" ? $s : "").'>English</option>
+       <option value="eo"'.($c == "eo" ? $s : "").'>Esperanto</option>
+       <option value="et"'.($c == "et" ? $s : "").'>Estonian</option>
+       <option value="ee"'.($c == "ee" ? $s : "").'>Ewe</option>
+       <option value="fo"'.($c == "fo" ? $s : "").'>Faroese</option>
+       <option value="fj"'.($c == "fj" ? $s : "").'>Fijian</option>
+       <option value="fi"'.($c == "fi" ? $s : "").'>Finnish</option>
+       <option value="fr"'.($c == "fr" ? $s : "").'>French</option>
+       <option value="ff"'.($c == "ff" ? $s : "").'>Fulah</option>
+       <option value="gd"'.($c == "gd" ? $s : "").'>Gaelic/Scottish Gaelic</option>
+       <option value="gl"'.($c == "gl" ? $s : "").'>Galician</option>
+       <option value="lg"'.($c == "lg" ? $s : "").'>Ganda</option>
+       <option value="ka"'.($c == "ka" ? $s : "").'>Georgian</option>
+       <option value="de"'.($c == "de" ? $s : "").'>German</option>
+       <option value="el"'.($c == "el" ? $s : "").'>Greek, Modern (1453-)</option>
+       <option value="gn"'.($c == "gn" ? $s : "").'>Guarani</option>
+       <option value="gu"'.($c == "gu" ? $s : "").'>Gujarati</option>
+       <option value="ht"'.($c == "ht" ? $s : "").'>Haitian</option>
+       <option value="ha"'.($c == "ha" ? $s : "").'>Hausa</option>
+       <option value="he"'.($c == "he" ? $s : "").'>Hebrew</option>
+       <option value="hz"'.($c == "hz" ? $s : "").'>Herero</option>
+       <option value="hi"'.($c == "hi" ? $s : "").'>Hindi</option>
+       <option value="ho"'.($c == "ho" ? $s : "").'>Hiri Motu</option>
+       <option value="hu"'.($c == "hu" ? $s : "").'>Hungarian</option>
+       <option value="is"'.($c == "is" ? $s : "").'>Icelandic</option>
+       <option value="io"'.($c == "io" ? $s : "").'>Ido</option>
+       <option value="ig"'.($c == "ig" ? $s : "").'>Igbo</option>
+       <option value="id"'.($c == "id" ? $s : "").'>Indonesian</option>
+       <option value="ie"'.($c == "ie" ? $s : "").'>Interlingue</option>
+       <option value="iu"'.($c == "iu" ? $s : "").'>Inuktitut</option>
+       <option value="ik"'.($c == "ik" ? $s : "").'>Inupiaq</option>
+       <option value="ga"'.($c == "ga" ? $s : "").'>Irish</option>
+       <option value="it"'.($c == "it" ? $s : "").'>Italian</option>
+       <option value="ja"'.($c == "ja" ? $s : "").'>Japanese</option>
+       <option value="jv"'.($c == "jv" ? $s : "").'>Javanese</option>
+       <option value="kl"'.($c == "kl" ? $s : "").'>Kalaallisut/Greenlandic</option>
+       <option value="kn"'.($c == "kn" ? $s : "").'>Kannada</option>
+       <option value="kr"'.($c == "kr" ? $s : "").'>Kanuri</option>
+       <option value="ks"'.($c == "ks" ? $s : "").'>Kashmiri</option>
+       <option value="kk"'.($c == "kk" ? $s : "").'>Kazakh</option>
+       <option value="ki"'.($c == "ki" ? $s : "").'>Kikuyu/Gikuyu</option>
+       <option value="rw"'.($c == "rw" ? $s : "").'>Kinyarwanda</option>
+       <option value="kv"'.($c == "kv" ? $s : "").'>Komi</option>
+       <option value="kg"'.($c == "kg" ? $s : "").'>Kongo</option>
+       <option value="ko"'.($c == "ko" ? $s : "").'>Korean</option>
+       <option value="kj"'.($c == "kj" ? $s : "").'>Kuanyama/Kwanyama</option>
+       <option value="ku"'.($c == "ku" ? $s : "").'>Kurdish</option>
+       <option value="ky"'.($c == "ky" ? $s : "").'>Kyrgyz/Kirghiz</option>
+       <option value="lo"'.($c == "lo" ? $s : "").'>Lao</option>
+       <option value="la"'.($c == "la" ? $s : "").'>Latin</option>
+       <option value="lv"'.($c == "lv" ? $s : "").'>Latvian</option>
+       <option value="li"'.($c == "li" ? $s : "").'>Limburgan</option>
+       <option value="ln"'.($c == "ln" ? $s : "").'>Lingala</option>
+       <option value="lt"'.($c == "lt" ? $s : "").'>Lithuanian</option>
+       <option value="lu"'.($c == "lu" ? $s : "").'>Luba-Katanga</option>
+       <option value="lb"'.($c == "lb" ? $s : "").'>Luxembourgish/Letzeburgesch</option>
+       <option value="mk"'.($c == "mk" ? $s : "").'>Macedonian</option>
+       <option value="mg"'.($c == "mg" ? $s : "").'>Malagasy</option>
+       <option value="ms"'.($c == "ms" ? $s : "").'>Malay</option>
+       <option value="ml"'.($c == "ml" ? $s : "").'>Malayalam</option>
+       <option value="mt"'.($c == "mt" ? $s : "").'>Maltese</option>
+       <option value="gv"'.($c == "gv" ? $s : "").'>Manx</option>
+       <option value="mi"'.($c == "mi" ? $s : "").'>Maori</option>
+       <option value="mr"'.($c == "mr" ? $s : "").'>Marathi</option>
+       <option value="mh"'.($c == "mh" ? $s : "").'>Marshallese</option>
+       <option value="mo"'.($c == "mo" ? $s : "").'>Moldavian</option>
+       <option value="mn"'.($c == "mn" ? $s : "").'>Mongolian</option>
+       <option value="na"'.($c == "na" ? $s : "").'>Nauru</option>
+       <option value="nv"'.($c == "nv" ? $s : "").'>Navajo/Navaho</option>
+       <option value="nd"'.($c == "nd" ? $s : "").'>Ndebele, North</option>
+       <option value="nr"'.($c == "nr" ? $s : "").'>Ndebele, South</option>
+       <option value="ng"'.($c == "ng" ? $s : "").'>Ndonga</option>
+       <option value="ne"'.($c == "ne" ? $s : "").'>Nepali</option>
+       <option value="frr"'.($c == "frr" ? $s : "").'>Northern Frisian</option>
+       <option value="se"'.($c == "se" ? $s : "").'>Northern Sami</option>
+       <option value="nb"'.($c == "nb" ? $s : "").'>Norwegian Bokm&#xE5;l</option>
+       <option value="nn"'.($c == "nn" ? $s : "").'>Norwegian Nynorsk</option>
+       <option value="no"'.($c == "no" ? $s : "").'>Norwegian</option>
+       <option value="oc"'.($c == "oc" ? $s : "").'>Occitan (post 1500)/Proven&#xE7;al</option>
+       <option value="oj"'.($c == "oj" ? $s : "").'>Ojibwa</option>
+       <option value="or"'.($c == "or" ? $s : "").'>Oriya</option>
+       <option value="om"'.($c == "om" ? $s : "").'>Oromo</option>
+       <option value="os"'.($c == "os" ? $s : "").'>Ossetian/Ossetic</option>
+       <option value="pi"'.($c == "pi" ? $s : "").'>Pali</option>
+       <option value="pa"'.($c == "pa" ? $s : "").'>Panjabi/Punjabi</option>
+       <option value="fa"'.($c == "fa" ? $s : "").'>Persian</option>
+       <option value="pl"'.($c == "pl" ? $s : "").'>Polish</option>
+       <option value="pt"'.($c == "pt" ? $s : "").'>Portuguese</option>
+       <option value="ps"'.($c == "ps" ? $s : "").'>Pushto</option>
+       <option value="qu"'.($c == "qu" ? $s : "").'>Quechua</option>
+       <option value="ro"'.($c == "ro" ? $s : "").'>Romanian</option>
+       <option value="rm"'.($c == "rm" ? $s : "").'>Romansh</option>
+       <option value="rn"'.($c == "rn" ? $s : "").'>Rundi</option>
+       <option value="ru"'.($c == "ru" ? $s : "").'>Russian</option>
+       <option value="sm"'.($c == "sm" ? $s : "").'>Samoan</option>
+       <option value="sg"'.($c == "sg" ? $s : "").'>Sango</option>
+       <option value="sa"'.($c == "sa" ? $s : "").'>Sanskrit</option>
+       <option value="sc"'.($c == "sc" ? $s : "").'>Sardinian</option>
+       <option value="sr"'.($c == "sr" ? $s : "").'>Serbian</option>
+       <option value="sh"'.($c == "sh" ? $s : "").'>Serbo-Croatian</option>
+       <option value="sn"'.($c == "sn" ? $s : "").'>Shona</option>
+       <option value="ii"'.($c == "ii" ? $s : "").'>Sichuan Yi</option>
+       <option value="sd"'.($c == "sd" ? $s : "").'>Sindhi</option>
+       <option value="si"'.($c == "si" ? $s : "").'>Sinhala/Sinhalese</option>
+       <option value="sk"'.($c == "sk" ? $s : "").'>Slovak</option>
+       <option value="sl"'.($c == "sl" ? $s : "").'>Slovenian</option>
+       <option value="so"'.($c == "so" ? $s : "").'>Somali</option>
+       <option value="st"'.($c == "st" ? $s : "").'>Sotho, Southern</option>
+       <option value="es"'.($c == "es" ? $s : "").'>Spanish/Castilian</option>
+       <option value="su"'.($c == "su" ? $s : "").'>Sundanese</option>
+       <option value="sw"'.($c == "sw" ? $s : "").'>Swahili</option>
+       <option value="ss"'.($c == "ss" ? $s : "").'>Swati</option>
+       <option value="sv"'.($c == "sv" ? $s : "").'>Swedish</option>
+       <option value="tl"'.($c == "tl" ? $s : "").'>Tagalog</option>
+       <option value="ty"'.($c == "ty" ? $s : "").'>Tahitian</option>
+       <option value="tg"'.($c == "tg" ? $s : "").'>Tajik</option>
+       <option value="ta"'.($c == "ta" ? $s : "").'>Tamil</option>
+       <option value="tt"'.($c == "tt" ? $s : "").'>Tatar</option>
+       <option value="te"'.($c == "te" ? $s : "").'>Telugu</option>
+       <option value="th"'.($c == "th" ? $s : "").'>Thai</option>
+       <option value="bo"'.($c == "bo" ? $s : "").'>Tibetan</option>
+       <option value="ti"'.($c == "ti" ? $s : "").'>Tigrinya</option>
+       <option value="to"'.($c == "to" ? $s : "").'>Tonga (Tonga Islands)</option>
+       <option value="ts"'.($c == "ts" ? $s : "").'>Tsonga</option>
+       <option value="tn"'.($c == "tn" ? $s : "").'>Tswana</option>
+       <option value="tr"'.($c == "tr" ? $s : "").'>Turkish</option>
+       <option value="tk"'.($c == "tk" ? $s : "").'>Turkmen</option>
+       <option value="tw"'.($c == "tw" ? $s : "").'>Twi</option>
+       <option value="ug"'.($c == "ug" ? $s : "").'>Uighur/Uyghur</option>
+       <option value="uk"'.($c == "uk" ? $s : "").'>Ukrainian</option>
+       <option value="ur"'.($c == "ur" ? $s : "").'>Urdu</option>
+       <option value="uz"'.($c == "uz" ? $s : "").'>Uzbek</option>
+       <option value="ve"'.($c == "ve" ? $s : "").'>Venda</option>
+       <option value="vi"'.($c == "vi" ? $s : "").'>Vietnamese</option>
+       <option value="vo"'.($c == "vo" ? $s : "").'>Volap&#xFC;k</option>
+       <option value="wa"'.($c == "wa" ? $s : "").'>Walloon</option>
+       <option value="cy"'.($c == "cy" ? $s : "").'>Welsh</option>
+       <option value="fy"'.($c == "fy" ? $s : "").'>Western Frisian</option>
+       <option value="wo"'.($c == "wo" ? $s : "").'>Wolof</option>
+       <option value="xh"'.($c == "xh" ? $s : "").'>Xhosa</option>
+       <option value="yi"'.($c == "yi" ? $s : "").'>Yiddish</option>
+       <option value="yo"'.($c == "yo" ? $s : "").'>Yoruba</option>
+       <option value="za"'.($c == "za" ? $s : "").'>Zhuang/Chuang</option>
+       <option value="zu"'.($c == "zu" ? $s : "").'>Zulu</option>
+     </select>';
+}
+
+function simple_reg_timezone_choice() {
+  $c = t('openid.sreg.timezone');
+  $s = ' selected="selected"';
+  return
+    '<select name="sreg[timezone]">
+       <option value="Africa/Abidjan"'.($c == "Africa/Abidjan" ? $s : "").'>Abidjan</option>
+       <option value="Africa/Accra"'.($c == "Africa/Accra" ? $s : "").'>Accra</option>
+       <option value="Brazil/Acre"'.($c == "Brazil/Acre" ? $s : "").'>Acre</option>
+       <option value="America/Adak"'.($c == "America/Adak" ? $s : "").'>Adak</option>
+       <option value="Africa/Addis_Ababa"'.($c == "Africa/Addis_Ababa" ? $s : "").'>Addis Ababa</option>
+       <option value="Australia/Adelaide"'.($c == "Australia/Adelaide" ? $s : "").'>Adelaide</option>
+       <option value="Asia/Aden"'.($c == "Asia/Aden" ? $s : "").'>Aden</option>
+       <option value="US/Alaska"'.($c == "US/Alaska" ? $s : "").'>Alaska</option>
+       <option value="US/Aleutian"'.($c == "US/Aleutian" ? $s : "").'>Aleutian</option>
+       <option value="Africa/Algiers"'.($c == "Africa/Algiers" ? $s : "").'>Algiers</option>
+       <option value="Asia/Almaty"'.($c == "Asia/Almaty" ? $s : "").'>Almaty</option>
+       <option value="Asia/Amman"'.($c == "Asia/Amman" ? $s : "").'>Amman</option>
+       <option value="Europe/Amsterdam"'.($c == "Europe/Amsterdam" ? $s : "").'>Amsterdam</option>
+       <option value="Asia/Anadyr"'.($c == "Asia/Anadyr" ? $s : "").'>Anadyr</option>
+       <option value="America/Anchorage"'.($c == "America/Anchorage" ? $s : "").'>Anchorage</option>
+       <option value="Europe/Andorra"'.($c == "Europe/Andorra" ? $s : "").'>Andorra</option>
+       <option value="America/Anguilla"'.($c == "America/Anguilla" ? $s : "").'>Anguilla</option>
+       <option value="Indian/Antananarivo"'.($c == "Indian/Antananarivo" ? $s : "").'>Antananarivo</option>
+       <option value="America/Antigua"'.($c == "America/Antigua" ? $s : "").'>Antigua</option>
+       <option value="Pacific/Apia"'.($c == "Pacific/Apia" ? $s : "").'>Apia</option>
+       <option value="Asia/Aqtau"'.($c == "Asia/Aqtau" ? $s : "").'>Aqtau</option>
+       <option value="Asia/Aqtobe"'.($c == "Asia/Aqtobe" ? $s : "").'>Aqtobe</option>
+       <option value="America/Araguaina"'.($c == "America/Araguaina" ? $s : "").'>Araguaina</option>
+       <option value="US/Arizona"'.($c == "US/Arizona" ? $s : "").'>Arizona</option>
+       <option value="America/Aruba"'.($c == "America/Aruba" ? $s : "").'>Aruba</option>
+       <option value="Asia/Ashgabat"'.($c == "Asia/Ashgabat" ? $s : "").'>Ashgabat</option>
+       <option value="Asia/Ashkhabad"'.($c == "Asia/Ashkhabad" ? $s : "").'>Ashkhabad</option>
+       <option value="Africa/Asmara"'.($c == "Africa/Asmara" ? $s : "").'>Asmara</option>
+       <option value="Africa/Asmera"'.($c == "Africa/Asmera" ? $s : "").'>Asmera</option>
+       <option value="America/Asuncion"'.($c == "America/Asuncion" ? $s : "").'>Asuncion</option>
+       <option value="Europe/Athens"'.($c == "Europe/Athens" ? $s : "").'>Athens</option>
+       <option value="America/Atikokan"'.($c == "America/Atikokan" ? $s : "").'>Atikokan</option>
+       <option value="America/Atka"'.($c == "America/Atka" ? $s : "").'>Atka</option>
+       <option value="Pacific/Auckland"'.($c == "Pacific/Auckland" ? $s : "").'>Auckland</option>
+       <option value="Atlantic/Azores"'.($c == "Atlantic/Azores" ? $s : "").'>Azores</option>
+       <option value="Asia/Baghdad"'.($c == "Asia/Baghdad" ? $s : "").'>Baghdad</option>
+       <option value="America/Bahia"'.($c == "America/Bahia" ? $s : "").'>Bahia</option>
+       <option value="Asia/Bahrain"'.($c == "Asia/Bahrain" ? $s : "").'>Bahrain</option>
+       <option value="Mexico/BajaNorte"'.($c == "Mexico/BajaNorte" ? $s : "").'>Baja Norte</option>
+       <option value="Mexico/BajaSur"'.($c == "Mexico/BajaSur" ? $s : "").'>Baja Sur</option>
+       <option value="Asia/Baku"'.($c == "Asia/Baku" ? $s : "").'>Baku</option>
+       <option value="Africa/Bamako"'.($c == "Africa/Bamako" ? $s : "").'>Bamako</option>
+       <option value="Asia/Bangkok"'.($c == "Asia/Bangkok" ? $s : "").'>Bangkok</option>
+       <option value="Africa/Bangui"'.($c == "Africa/Bangui" ? $s : "").'>Bangui</option>
+       <option value="Africa/Banjul"'.($c == "Africa/Banjul" ? $s : "").'>Banjul</option>
+       <option value="America/Barbados"'.($c == "America/Barbados" ? $s : "").'>Barbados</option>
+       <option value="Asia/Beirut"'.($c == "Asia/Beirut" ? $s : "").'>Beirut</option>
+       <option value="America/Belem"'.($c == "America/Belem" ? $s : "").'>Belem</option>
+       <option value="Europe/Belfast"'.($c == "Europe/Belfast" ? $s : "").'>Belfast</option>
+       <option value="Europe/Belgrade"'.($c == "Europe/Belgrade" ? $s : "").'>Belgrade</option>
+       <option value="America/Belize"'.($c == "America/Belize" ? $s : "").'>Belize</option>
+       <option value="Europe/Berlin"'.($c == "Europe/Berlin" ? $s : "").'>Berlin</option>
+       <option value="Atlantic/Bermuda"'.($c == "Atlantic/Bermuda" ? $s : "").'>Bermuda</option>
+       <option value="Asia/Bishkek"'.($c == "Asia/Bishkek" ? $s : "").'>Bishkek</option>
+       <option value="Africa/Bissau"'.($c == "Africa/Bissau" ? $s : "").'>Bissau</option>
+       <option value="America/Blanc-Sablon"'.($c == "America/Blanc-Sablon" ? $s : "").'>Blanc-Sablon</option>
+       <option value="Africa/Blantyre"'.($c == "Africa/Blantyre" ? $s : "").'>Blantyre</option>
+       <option value="America/Boa_Vista"'.($c == "America/Boa_Vista" ? $s : "").'>Boa Vista</option>
+       <option value="America/Bogota"'.($c == "America/Bogota" ? $s : "").'>Bogota</option>
+       <option value="America/Boise"'.($c == "America/Boise" ? $s : "").'>Boise</option>
+       <option value="Europe/Bratislava"'.($c == "Europe/Bratislava" ? $s : "").'>Bratislava</option>
+       <option value="Africa/Brazzaville"'.($c == "Africa/Brazzaville" ? $s : "").'>Brazzaville</option>
+       <option value="Australia/Brisbane"'.($c == "Australia/Brisbane" ? $s : "").'>Brisbane</option>
+       <option value="Australia/Broken_Hill"'.($c == "Australia/Broken_Hill" ? $s : "").'>Broken Hill</option>
+       <option value="Asia/Brunei"'.($c == "Asia/Brunei" ? $s : "").'>Brunei</option>
+       <option value="Europe/Brussels"'.($c == "Europe/Brussels" ? $s : "").'>Brussels</option>
+       <option value="Europe/Bucharest"'.($c == "Europe/Bucharest" ? $s : "").'>Bucharest</option>
+       <option value="Europe/Budapest"'.($c == "Europe/Budapest" ? $s : "").'>Budapest</option>
+       <option value="America/Argentina/Buenos_Aires"'.($c == "America/Argentina/Buenos_Aires" ? $s : "").'>Buenos Aires</option>
+       <option value="Africa/Bujumbura"'.($c == "Africa/Bujumbura" ? $s : "").'>Bujumbura</option>
+       <option value="Africa/Cairo"'.($c == "Africa/Cairo" ? $s : "").'>Cairo</option>
+       <option value="Asia/Calcutta"'.($c == "Asia/Calcutta" ? $s : "").'>Calcutta</option>
+       <option value="America/Cambridge_Bay"'.($c == "America/Cambridge_Bay" ? $s : "").'>Cambridge Bay</option>
+       <option value="America/Campo_Grande"'.($c == "America/Campo_Grande" ? $s : "").'>Campo Grande</option>
+       <option value="Atlantic/Canary"'.($c == "Atlantic/Canary" ? $s : "").'>Canary</option>
+       <option value="Australia/Canberra"'.($c == "Australia/Canberra" ? $s : "").'>Canberra</option>
+       <option value="America/Cancun"'.($c == "America/Cancun" ? $s : "").'>Cancun</option>
+       <option value="Atlantic/Cape_Verde"'.($c == "Atlantic/Cape_Verde" ? $s : "").'>Cape Verde</option>
+       <option value="America/Caracas"'.($c == "America/Caracas" ? $s : "").'>Caracas</option>
+       <option value="Africa/Casablanca"'.($c == "Africa/Casablanca" ? $s : "").'>Casablanca</option>
+       <option value="Antarctica/Casey"'.($c == "Antarctica/Casey" ? $s : "").'>Casey</option>
+       <option value="America/Argentina/Catamarca"'.($c == "America/Argentina/Catamarca" ? $s : "").'>Catamarca</option>
+       <option value="America/Cayenne"'.($c == "America/Cayenne" ? $s : "").'>Cayenne</option>
+       <option value="America/Cayman"'.($c == "America/Cayman" ? $s : "").'>Cayman</option>
+       <option value="Africa/Ceuta"'.($c == "Africa/Ceuta" ? $s : "").'>Ceuta</option>
+       <option value="Indian/Chagos"'.($c == "Indian/Chagos" ? $s : "").'>Chagos</option>
+       <option value="Pacific/Chatham"'.($c == "Pacific/Chatham" ? $s : "").'>Chatham</option>
+       <option value="America/Chicago"'.($c == "America/Chicago" ? $s : "").'>Chicago</option>
+       <option value="America/Chihuahua"'.($c == "America/Chihuahua" ? $s : "").'>Chihuahua</option>
+       <option value="Europe/Chisinau"'.($c == "Europe/Chisinau" ? $s : "").'>Chisinau</option>
+       <option value="Asia/Choibalsan"'.($c == "Asia/Choibalsan" ? $s : "").'>Choibalsan</option>
+       <option value="Asia/Chongqing"'.($c == "Asia/Chongqing" ? $s : "").'>Chongqing</option>
+       <option value="Indian/Christmas"'.($c == "Indian/Christmas" ? $s : "").'>Christmas</option>
+       <option value="Asia/Chungking"'.($c == "Asia/Chungking" ? $s : "").'>Chungking</option>
+       <option value="Indian/Cocos"'.($c == "Indian/Cocos" ? $s : "").'>Cocos</option>
+       <option value="Asia/Colombo"'.($c == "Asia/Colombo" ? $s : "").'>Colombo</option>
+       <option value="America/Argentina/ComodRivadavia"'.($c == "America/Argentina/ComodRivadavia" ? $s : "").'>Comod Rivadavia</option>
+       <option value="Indian/Comoro"'.($c == "Indian/Comoro" ? $s : "").'>Comoro</option>
+       <option value="Africa	/Conakry"'.($c == "Africa	/Conakry" ? $s : "").'>Conakry</option>
+       <option value="Europe/Copenhagen"'.($c == "Europe/Copenhagen" ? $s : "").'>Copenhagen</option>
+       <option value="America/Coral_Harbour"'.($c == "America/Coral_Harbour" ? $s : "").'>Coral Harbour</option>
+       <option value="America/Argentina/Cordoba"'.($c == "America/Argentina/Cordoba" ? $s : "").'>Cordoba</option>
+       <option value="America/Costa_Rica"'.($c == "America/Costa_Rica" ? $s : "").'>Costa_Rica</option>
+       <option value="America/Cuiaba"'.($c == "America/Cuiaba" ? $s : "").'>Cuiaba</option>
+       <option value="America/Curacao"'.($c == "America/Curacao" ? $s : "").'>Curacao</option>
+       <option value="Australia/Currie"'.($c == "Australia/Currie" ? $s : "").'>Currie</option>
+       <option value="Asia/Dacca"'.($c == "Asia/Dacca" ? $s : "").'>Dacca</option>
+       <option value="Africa/Dakar"'.($c == "Africa/Dakar" ? $s : "").'>Dakar</option>
+       <option value="Asia/Damascus"'.($c == "Asia/Damascus" ? $s : "").'>Damascus</option>
+       <option value="America/Danmarkshavn"'.($c == "America/Danmarkshavn" ? $s : "").'>Danmarkshavn</option>
+       <option value="Africa/Dar_es_Salaam"'.($c == "Africa/Dar_es_Salaam" ? $s : "").'>Dar es Salaam</option>
+       <option value="Australia/Darwin"'.($c == "Australia/Darwin" ? $s : "").'>Darwin</option>
+       <option value="Antarctica/Davis"'.($c == "Antarctica/Davis" ? $s : "").'>Davis</option>
+       <option value="America/Dawson"'.($c == "America/Dawson" ? $s : "").'>Dawson</option>
+       <option value="America/Dawson_Creek"'.($c == "America/Dawson_Creek" ? $s : "").'>Dawson Creek</option>
+       <option value="Brazil/DeNoronha"'.($c == "Brazil/DeNoronha" ? $s : "").'>De Noronha</option>
+       <option value="America/Denver"'.($c == "America/Denver" ? $s : "").'>Denver</option>
+       <option value="America/Detroit"'.($c == "America/Detroit" ? $s : "").'>Detroit</option>
+       <option value="Asia/Dhaka"'.($c == "Asia/Dhaka" ? $s : "").'>Dhaka</option>
+       <option value="Asia/Dili"'.($c == "Asia/Dili" ? $s : "").'>Dili</option>
+       <option value="Africa/Djibouti"'.($c == "Africa/Djibouti" ? $s : "").'>Djibouti</option>
+       <option value="America/Dominica"'.($c == "America/Dominica" ? $s : "").'>Dominica</option>
+       <option value="Africa/Douala"'.($c == "Africa/Douala" ? $s : "").'>Douala</option>
+       <option value="Asia/Dubai"'.($c == "Asia/Dubai" ? $s : "").'>Dubai</option>
+       <option value="Europe/Dublin"'.($c == "Europe/Dublin" ? $s : "").'>Dublin</option>
+       <option value="Antarctica/DumontDUrville"'.($c == "Antarctica/DumontDUrville" ? $s : "").'>Dumont D\'Urville</option>
+       <option value="Asia/Dushanbe"'.($c == "Asia/Dushanbe" ? $s : "").'>Dushanbe</option>
+       <option value="US/East-Indiana"'.($c == "US/East-Indiana" ? $s : "").'>East-Indiana</option>
+       <option value="Canada/East-Saskatchewan"'.($c == "Canada/East-Saskatchewan" ? $s : "").'>East-Saskatchewan</option>
+       <option value="Pacific/Easter"'.($c == "Pacific/Easter" ? $s : "").'>Easter</option>
+       <option value="Chile/EasterIsland"'.($c == "Chile/EasterIsland" ? $s : "").'>EasterIsland</option>
+       <option value="America/Edmonton"'.($c == "America/Edmonton" ? $s : "").'>Edmonton</option>
+       <option value="Pacific/Efate"'.($c == "Pacific/Efate" ? $s : "").'>Efate</option>
+       <option value="America/Eirunepe"'.($c == "America/Eirunepe" ? $s : "").'>Eirunepe</option>
+       <option value="Africa/El_Aaiun"'.($c == "Africa/El_Aaiun" ? $s : "").'>El Aaiun</option>
+       <option value="America/El_Salvador"'.($c == "America/El_Salvador" ? $s : "").'>El Salvador</option>
+       <option value="Pacific/Enderbury"'.($c == "Pacific/Enderbury" ? $s : "").'>Enderbury</option>
+       <option value="America/Ensenada"'.($c == "America/Ensenada" ? $s : "").'>Ensenada</option>
+       <option value="Australia/Eucla"'.($c == "Australia/Eucla" ? $s : "").'>Eucla</option>
+       <option value="Pacific/Fakaofo"'.($c == "Pacific/Fakaofo" ? $s : "").'>Fakaofo</option>
+       <option value="Atlantic/Faroe"'.($c == "Atlantic/Faroe" ? $s : "").'>Faroe</option>
+       <option value="Pacific/Fiji"'.($c == "Pacific/Fiji" ? $s : "").'>Fiji</option>
+       <option value="America/Fort_Wayne"'.($c == "America/Fort_Wayne" ? $s : "").'>Fort Wayne</option>
+       <option value="America/Fortaleza"'.($c == "America/Fortaleza" ? $s : "").'>Fortaleza</option>
+       <option value="Africa/Freetown"'.($c == "Africa/Freetown" ? $s : "").'>Freetown</option>
+       <option value="Pacific/Funafuti"'.($c == "Pacific/Funafuti" ? $s : "").'>Funafuti</option>
+       <option value="Africa/Gaborone"'.($c == "Africa/Gaborone" ? $s : "").'>Gaborone</option>
+       <option value="Pacific/Galapagos"'.($c == "Pacific/Galapagos" ? $s : "").'>Galapagos</option>
+       <option value="Pacific/Gambier"'.($c == "Pacific/Gambier" ? $s : "").'>Gambier</option>
+       <option value="Asia/Gaza"'.($c == "Asia/Gaza" ? $s : "").'>Gaza</option>
+       <option value="Mexico/General"'.($c == "Mexico/General" ? $s : "").'>General</option>
+       <option value="Europe/Gibraltar"'.($c == "Europe/Gibraltar" ? $s : "").'>Gibraltar</option>
+       <option value="America/Glace_Bay"'.($c == "America/Glace_Bay" ? $s : "").'>Glace Bay</option>
+       <option value="Etc/GMT-11"'.($c == "Etc/GMT-11" ? $s : "").'>GMT-11</option>
+       <option value="Etc/GMT-10"'.($c == "Etc/GMT-10" ? $s : "").'>GMT-10</option>
+       <option value="Etc/GMT-9"'.($c == "Etc/GMT-9" ? $s : "").'>GMT-9</option>
+       <option value="Etc/GMT-8"'.($c == "Etc/GMT-8" ? $s : "").'>GMT-8</option>
+       <option value="Etc/GMT-7"'.($c == "Etc/GMT-7" ? $s : "").'>GMT-7</option>
+       <option value="Etc/GMT-6"'.($c == "Etc/GMT-6" ? $s : "").'>GMT-6</option>
+       <option value="Etc/GMT-5"'.($c == "Etc/GMT-5" ? $s : "").'>GMT-5</option>
+       <option value="Etc/GMT-4"'.($c == "Etc/GMT-4" ? $s : "").'>GMT-4</option>
+       <option value="Etc/GMT-3"'.($c == "Etc/GMT-3" ? $s : "").'>GMT-3</option>
+       <option value="Etc/GMT-2"'.($c == "Etc/GMT-2" ? $s : "").'>GMT-2</option>
+       <option value="Etc/GMT-1"'.($c == "Etc/GMT-1" ? $s : "").'>GMT-1</option>
+       <option value="Etc/GMT"'.($c == "Etc/GMT" ? $s : "").'>GMT</option>
+       <option value="Etc/GMT+1"'.($c == "Etc/GMT+1" ? $s : "").'>GMT+1</option>
+       <option value="Etc/GMT+2"'.($c == "Etc/GMT+2" ? $s : "").'>GMT+2</option>
+       <option value="Etc/GMT+3"'.($c == "Etc/GMT+3" ? $s : "").'>GMT+3</option>
+       <option value="Etc/GMT+4"'.($c == "Etc/GMT+4" ? $s : "").'>GMT+4</option>
+       <option value="Etc/GMT+5"'.($c == "Etc/GMT+5" ? $s : "").'>GMT+5</option>
+       <option value="Etc/GMT+6"'.($c == "Etc/GMT+6" ? $s : "").'>GMT+6</option>
+       <option value="Etc/GMT+7"'.($c == "Etc/GMT+7" ? $s : "").'>GMT+7</option>
+       <option value="Etc/GMT+8"'.($c == "Etc/GMT+8" ? $s : "").'>GMT+8</option>
+       <option value="Etc/GMT+9"'.($c == "Etc/GMT+9" ? $s : "").'>GMT+9</option>
+       <option value="Etc/GMT+10"'.($c == "Etc/GMT+10" ? $s : "").'>GMT+10</option>
+       <option value="Etc/GMT+11"'.($c == "Etc/GMT+11" ? $s : "").'>GMT+11</option>
+       <option value="Etc/GMT+12"'.($c == "Etc/GMT+12" ? $s : "").'>GMT+12</option>
+       <option value="America/Godthab"'.($c == "America/Godthab" ? $s : "").'>Godthab</option>
+       <option value="America/Goose_Bay"'.($c == "America/Goose_Bay" ? $s : "").'>Goose Bay</option>
+       <option value="America/Grand_Turk"'.($c == "America/Grand_Turk" ? $s : "").'>Grand Turk</option>
+       <option value="Etc/Greenwich"'.($c == "Etc/Greenwich" ? $s : "").'>Greenwich</option>
+       <option value="America/Grenada"'.($c == "America/Grenada" ? $s : "").'>Grenada</option>
+       <option value="Pacific/Guadalcanal"'.($c == "Pacific/Guadalcanal" ? $s : "").'>Guadalcanal</option>
+       <option value="America/Guadeloupe"'.($c == "America/Guadeloupe" ? $s : "").'>Guadeloupe</option>
+       <option value="Pacific/Guam"'.($c == "Pacific/Guam" ? $s : "").'>Guam</option>
+       <option value="America/Guatemala"'.($c == "America/Guatemala" ? $s : "").'>Guatemala</option>
+       <option value="America/Guayaquil"'.($c == "America/Guayaquil" ? $s : "").'>Guayaquil</option>
+       <option value="Europe/Guernsey"'.($c == "Europe/Guernsey" ? $s : "").'>Guernsey</option>
+       <option value="America/Guyana"'.($c == "America/Guyana" ? $s : "").'>Guyana</option>
+       <option value="America/Halifax"'.($c == "America/Halifax" ? $s : "").'>Halifax</option>
+       <option value="Africa/Harare"'.($c == "Africa/Harare" ? $s : "").'>Harare</option>
+       <option value="Asia/Harbin"'.($c == "Asia/Harbin" ? $s : "").'>Harbin</option>
+       <option value="America/Havana"'.($c == "America/Havana" ? $s : "").'>Havana</option>
+       <option value="US/Hawaii"'.($c == "US/Hawaii" ? $s : "").'>Hawaii</option>
+       <option value="Europe/Helsinki"'.($c == "Europe/Helsinki" ? $s : "").'>Helsinki</option>
+       <option value="America/Hermosillo"'.($c == "America/Hermosillo" ? $s : "").'>Hermosillo</option>
+       <option value="Australia/Hobart"'.($c == "Australia/Hobart" ? $s : "").'>Hobart</option>
+       <option value="Asia/Hong_Kong"'.($c == "Asia/Hong_Kong" ? $s : "").'>Hong Kong</option>
+       <option value="Pacific/Honolulu"'.($c == "Pacific/Honolulu" ? $s : "").'>Honolulu</option>
+       <option value="Asia/Hovd"'.($c == "Asia/Hovd" ? $s : "").'>Hovd</option>
+       <option value="US/Indiana-Starke"'.($c == "US/Indiana-Starke" ? $s : "").'>Indiana-Starke</option>
+       <option value="America/Indiana/Indianapolis"'.($c == "America/Indiana/Indianapolis" ? $s : "").'>Indianapolis</option>
+       <option value="America/Inuvik"'.($c == "America/Inuvik" ? $s : "").'>Inuvik</option>
+       <option value="America/Iqaluit"'.($c == "America/Iqaluit" ? $s : "").'>Iqaluit</option>
+       <option value="Iran"'.($c == "Iran" ? $s : "").'>Iran</option>
+       <option value="Asia/Irkutsk"'.($c == "Asia/Irkutsk" ? $s : "").'>Irkutsk</option>
+       <option value="Europe/Isle_of_Man"'.($c == "Europe/Isle_of_Man" ? $s : "").'>Isle of Man</option>
+       <option value="Asia/Istanbul"'.($c == "Asia/Istanbul" ? $s : "").'>Istanbul</option>
+       <option value="Europe/Istanbul"'.($c == "Europe/Istanbul" ? $s : "").'>Istanbul</option>
+       <option value="Asia/Jakarta"'.($c == "Asia/Jakarta" ? $s : "").'>Jakarta</option>
+       <option value="America/Jamaica"'.($c == "America/Jamaica" ? $s : "").'>Jamaica</option>
+       <option value="Atlantic/Jan_Mayen"'.($c == "Atlantic/Jan_Mayen" ? $s : "").'>Jan Mayen</option>
+       <option value="Asia/Jayapura"'.($c == "Asia/Jayapura" ? $s : "").'>Jayapura</option>
+       <option value="Europe/Jersey"'.($c == "Europe/Jersey" ? $s : "").'>Jersey</option>
+       <option value="Asia/Jerusalem"'.($c == "Asia/Jerusalem" ? $s : "").'>Jerusalem</option>
+       <option value="Africa/Johannesburg"'.($c == "Africa/Johannesburg" ? $s : "").'>Johannesburg</option>
+       <option value="Pacific/Johnston"'.($c == "Pacific/Johnston" ? $s : "").'>Johnston</option>
+       <option value="America/Argentina/Jujuy"'.($c == "America/Argentina/Jujuy" ? $s : "").'>Jujuy</option>
+       <option value="America/Juneau"'.($c == "America/Juneau" ? $s : "").'>Juneau</option>
+       <option value="Asia/Kabul"'.($c == "Asia/Kabul" ? $s : "").'>Kabul</option>
+       <option value="Europe/Kaliningrad"'.($c == "Europe/Kaliningrad" ? $s : "").'>Kaliningrad</option>
+       <option value="Asia/Kamchatka"'.($c == "Asia/Kamchatka" ? $s : "").'>Kamchatka</option>
+       <option value="Africa/Kampala"'.($c == "Africa/Kampala" ? $s : "").'>Kampala</option>
+       <option value="Asia/Karachi"'.($c == "Asia/Karachi" ? $s : "").'>Karachi</option>
+       <option value="Asia/Kashgar"'.($c == "Asia/Kashgar" ? $s : "").'>Kashgar</option>
+       <option value="Asia/Katmandu"'.($c == "Asia/Katmandu" ? $s : "").'>Katmandu</option>
+       <option value="Indian/Kerguelen"'.($c == "Indian/Kerguelen" ? $s : "").'>Kerguelen</option>
+       <option value="Africa/Khartoum"'.($c == "Africa/Khartoum" ? $s : "").'>Khartoum</option>
+       <option value="Europe/Kiev"'.($c == "Europe/Kiev" ? $s : "").'>Kiev</option>
+       <option value="Africa/Kigali"'.($c == "Africa/Kigali" ? $s : "").'>Kigali</option>
+       <option value="Africa/Kinshasa"'.($c == "Africa/Kinshasa" ? $s : "").'>Kinshasa</option>
+       <option value="Pacific/Kiritimati"'.($c == "Pacific/Kiritimati" ? $s : "").'>Kiritimati</option>
+       <option value="America/Indiana/Knox"'.($c == "America/Indiana/Knox" ? $s : "").'>Knox</option>
+       <option value="Pacific/Kosrae"'.($c == "Pacific/Kosrae" ? $s : "").'>Kosrae</option>
+       <option value="Asia/Krasnoyarsk"'.($c == "Asia/Krasnoyarsk" ? $s : "").'>Krasnoyarsk</option>
+       <option value="Asia/Kuala_Lumpur"'.($c == "Asia/Kuala_Lumpur" ? $s : "").'>Kuala Lumpur</option>
+       <option value="Asia/Kuching"'.($c == "Asia/Kuching" ? $s : "").'>Kuching</option>
+       <option value="Asia/Kuwait"'.($c == "Asia/Kuwait" ? $s : "").'>Kuwait</option>
+       <option value="Pacific/Kwajalein"'.($c == "Pacific/Kwajalein" ? $s : "").'>Kwajalein</option>
+       <option value="America/La_Paz"'.($c == "America/La_Paz" ? $s : "").'>La Paz</option>
+       <option value="America/Argentina/La_Rioja"'.($c == "America/Argentina/La_Rioja" ? $s : "").'>La Rioja</option>
+       <option value="Africa/Lagos"'.($c == "Africa/Lagos" ? $s : "").'>Lagos</option>
+       <option value="Africa/Libreville"'.($c == "Africa/Libreville" ? $s : "").'>Libreville</option>
+       <option value="America/Lima"'.($c == "America/Lima" ? $s : "").'>Lima</option>
+       <option value="Australia/Lindeman"'.($c == "Australia/Lindeman" ? $s : "").'>Lindeman</option>
+       <option value="Europe/Lisbon"'.($c == "Europe/Lisbon" ? $s : "").'>Lisbon</option>
+       <option value="Europe/Ljubljana"'.($c == "Europe/Ljubljana" ? $s : "").'>Ljubljana</option>
+       <option value="Africa/Lome"'.($c == "Africa/Lome" ? $s : "").'>Lome</option>
+       <option value="Europe/London"'.($c == "Europe/London" ? $s : "").'>London</option>
+       <option value="Arctic/Longyearbyen"'.($c == "Arctic/Longyearbyen" ? $s : "").'>Longyearbyen</option>
+       <option value="Australia/Lord_Howe"'.($c == "Australia/Lord_Howe" ? $s : "").'>Lord Howe</option>
+       <option value="America/Los_Angeles"'.($c == "America/Los_Angeles" ? $s : "").'>Los Angeles</option>
+       <option value="America/Kentucky/Louisville"'.($c == "America/Kentucky/Louisville" ? $s : "").'>Louisville</option>
+       <option value="Africa/Luanda"'.($c == "Africa/Luanda" ? $s : "").'>Luanda</option>
+       <option value="Africa/Lubumbashi"'.($c == "Africa/Lubumbashi" ? $s : "").'>Lubumbashi</option>
+       <option value="Africa/Lusaka"'.($c == "Africa/Lusaka" ? $s : "").'>Lusaka</option>
+       <option value="Europe/Luxembourg"'.($c == "Europe/Luxembourg" ? $s : "").'>Luxembourg</option>
+       <option value="Asia/Macau"'.($c == "Asia/Macau" ? $s : "").'>Macau</option>
+       <option value="America/Maceio"'.($c == "America/Maceio" ? $s : "").'>Maceio</option>
+       <option value="Atlantic/Madeira"'.($c == "Atlantic/Madeira" ? $s : "").'>Madeira</option>
+       <option value="Europe/Madrid"'.($c == "Europe/Madrid" ? $s : "").'>Madrid</option>
+       <option value="Asia/Magadan"'.($c == "Asia/Magadan" ? $s : "").'>Magadan</option>
+       <option value="Indian/Mahe"'.($c == "Indian/Mahe" ? $s : "").'>Mahe</option>
+       <option value="Pacific/Majuro"'.($c == "Pacific/Majuro" ? $s : "").'>Majuro</option>
+       <option value="Asia/Makassar"'.($c == "Asia/Makassar" ? $s : "").'>Makassar</option>
+       <option value="Africa/Malabo"'.($c == "Africa/Malabo" ? $s : "").'>Malabo</option>
+       <option value="Indian/Maldives"'.($c == "Indian/Maldives" ? $s : "").'>Maldives</option>
+       <option value="Europe/Malta"'.($c == "Europe/Malta" ? $s : "").'>Malta</option>
+       <option value="America/Managua"'.($c == "America/Managua" ? $s : "").'>Managua</option>
+       <option value="America/Manaus"'.($c == "America/Manaus" ? $s : "").'>Manaus</option>
+       <option value="Asia/Manila"'.($c == "Asia/Manila" ? $s : "").'>Manila</option>
+       <option value="Africa/Maputo"'.($c == "Africa/Maputo" ? $s : "").'>Maputo</option>
+       <option value="America/Indiana/Marengo"'.($c == "America/Indiana/Marengo" ? $s : "").'>Marengo</option>
+       <option value="Europe/Mariehamn"'.($c == "Europe/Mariehamn" ? $s : "").'>Mariehamn</option>
+       <option value="Pacific/Marquesas"'.($c == "Pacific/Marquesas" ? $s : "").'>Marquesas</option>
+       <option value="America/Martinique"'.($c == "America/Martinique" ? $s : "").'>Martinique</option>
+       <option value="Africa/Maseru"'.($c == "Africa/Maseru" ? $s : "").'>Maseru</option>
+       <option value="Indian/Mauritius"'.($c == "Indian/Mauritius" ? $s : "").'>Mauritius</option>
+       <option value="Antarctica/Mawson"'.($c == "Antarctica/Mawson" ? $s : "").'>Mawson</option>
+       <option value="Indian/Mayotte"'.($c == "Indian/Mayotte" ? $s : "").'>Mayotte</option>
+       <option value="America/Mazatlan"'.($c == "America/Mazatlan" ? $s : "").'>Mazatlan</option>
+       <option value="Africa/Mbabane"'.($c == "Africa/Mbabane" ? $s : "").'>Mbabane</option>
+       <option value="Antarctica/McMurdo"'.($c == "Antarctica/McMurdo" ? $s : "").'>McMurdo</option>
+       <option value="Australia/Melbourne"'.($c == "Australia/Melbourne" ? $s : "").'>Melbourne</option>
+       <option value="America/Argentina/Mendoza"'.($c == "America/Argentina/Mendoza" ? $s : "").'>Mendoza</option>
+       <option value="America/Menominee"'.($c == "America/Menominee" ? $s : "").'>Menominee</option>
+       <option value="America/Merida"'.($c == "America/Merida" ? $s : "").'>Merida</option>
+       <option value="America/Mexico_City"'.($c == "America/Mexico_City" ? $s : "").'>Mexico City</option>
+       <option value="US/Michigan"'.($c == "US/Michigan" ? $s : "").'>Michigan</option>
+       <option value="Pacific/Midway"'.($c == "Pacific/Midway" ? $s : "").'>Midway</option>
+       <option value="Europe/Minsk"'.($c == "Europe/Minsk" ? $s : "").'>Minsk</option>
+       <option value="America/Miquelon"'.($c == "America/Miquelon" ? $s : "").'>Miquelon</option>
+       <option value="Africa/Mogadishu"'.($c == "Africa/Mogadishu" ? $s : "").'>Mogadishu</option>
+       <option value="Europe/Monaco"'.($c == "Europe/Monaco" ? $s : "").'>Monaco</option>
+       <option value="America/Moncton"'.($c == "America/Moncton" ? $s : "").'>Moncton</option>
+       <option value="Africa/Monrovia"'.($c == "Africa/Monrovia" ? $s : "").'>Monrovia</option>
+       <option value="America/Monterrey"'.($c == "America/Monterrey" ? $s : "").'>Monterrey</option>
+       <option value="America/Montevideo"'.($c == "America/Montevideo" ? $s : "").'>Montevideo</option>
+       <option value="America/Kentucky/Monticello"'.($c == "America/Kentucky/Monticello" ? $s : "").'>Monticello</option>
+       <option value="America/Montreal"'.($c == "America/Montreal" ? $s : "").'>Montreal</option>
+       <option value="America/Montserrat"'.($c == "America/Montserrat" ? $s : "").'>Montserrat</option>
+       <option value="Europe/Moscow"'.($c == "Europe/Moscow" ? $s : "").'>Moscow</option>
+       <option value="Asia/Muscat"'.($c == "Asia/Muscat" ? $s : "").'>Muscat</option>
+       <option value="Africa/Nairobi"'.($c == "Africa/Nairobi" ? $s : "").'>Nairobi</option>
+       <option value="America/Nassau"'.($c == "America/Nassau" ? $s : "").'>Nassau</option>
+       <option value="Pacific/Nauru"'.($c == "Pacific/Nauru" ? $s : "").'>Nauru</option>
+       <option value="Africa/Ndjamena"'.($c == "Africa/Ndjamena" ? $s : "").'>Ndjamena</option>
+       <option value="America/North_Dakota/New_Salem"'.($c == "America/North_Dakota/New_Salem" ? $s : "").'>New Salem</option>
+       <option value="America/New_York"'.($c == "America/New_York" ? $s : "").'>New York</option>
+       <option value="Canada/Newfoundland"'.($c == "Canada/Newfoundland" ? $s : "").'>Newfoundland</option>
+       <option value="Africa/Niamey"'.($c == "Africa/Niamey" ? $s : "").'>Niamey</option>
+       <option value="Asia/Nicosia"'.($c == "Asia/Nicosia" ? $s : "").'>Nicosia</option>
+       <option value="Europe/Nicosia"'.($c == "Europe/Nicosia" ? $s : "").'>Nicosia</option>
+       <option value="America/Nipigon"'.($c == "America/Nipigon" ? $s : "").'>Nipigon</option>
+       <option value="Pacific/Niue"'.($c == "Pacific/Niue" ? $s : "").'>Niue</option>
+       <option value="America/Nome"'.($c == "America/Nome" ? $s : "").'>Nome</option>
+       <option value="Pacific/Norfolk"'.($c == "Pacific/Norfolk" ? $s : "").'>Norfolk</option>
+       <option value="America/Noronha"'.($c == "America/Noronha" ? $s : "").'>Noronha</option>
+       <option value="Australia/North"'.($c == "Australia/North" ? $s : "").'>North</option>
+       <option value="Africa/Nouakchott"'.($c == "Africa/Nouakchott" ? $s : "").'>Nouakchott</option>
+       <option value="Pacific/Noumea"'.($c == "Pacific/Noumea" ? $s : "").'>Noumea</option>
+       <option value="Asia/Novosibirsk"'.($c == "Asia/Novosibirsk" ? $s : "").'>Novosibirsk</option>
+       <option value="Asia/Omsk"'.($c == "Asia/Omsk" ? $s : "").'>Omsk</option>
+       <option value="Asia/Oral"'.($c == "Asia/Oral" ? $s : "").'>Oral</option>
+       <option value="Europe/Oslo"'.($c == "Europe/Oslo" ? $s : "").'>Oslo</option>
+       <option value="Africa/Ouagadougou"'.($c == "Africa/Ouagadougou" ? $s : "").'>Ouagadougou</option>
+       <option value="Pacific/Pago_Pago"'.($c == "Pacific/Pago_Pago" ? $s : "").'>Pago Pago</option>
+       <option value="Pacific/Palau"'.($c == "Pacific/Palau" ? $s : "").'>Palau</option>
+       <option value="Antarctica/Palmer"'.($c == "Antarctica/Palmer" ? $s : "").'>Palmer</option>
+       <option value="America/Panama"'.($c == "America/Panama" ? $s : "").'>Panama</option>
+       <option value="America/Pangnirtung"'.($c == "America/Pangnirtung" ? $s : "").'>Pangnirtung</option>
+       <option value="America/Paramaribo"'.($c == "America/Paramaribo" ? $s : "").'>Paramaribo</option>
+       <option value="Europe/Paris"'.($c == "Europe/Paris" ? $s : "").'>Paris</option>
+       <option value="Australia/Perth"'.($c == "Australia/Perth" ? $s : "").'>Perth</option>
+       <option value="America/Indiana/Petersburg"'.($c == "America/Indiana/Petersburg" ? $s : "").'>Petersburg</option>
+       <option value="Asia/Phnom_Penh"'.($c == "Asia/Phnom_Penh" ? $s : "").'>Phnom_Penh</option>
+       <option value="America/Phoenix"'.($c == "America/Phoenix" ? $s : "").'>Phoenix</option>
+       <option value="Pacific/Pitcairn"'.($c == "Pacific/Pitcairn" ? $s : "").'>Pitcairn</option>
+       <option value="Europe/Podgorica"'.($c == "Europe/Podgorica" ? $s : "").'>Podgorica</option>
+       <option value="Pacific/Ponape"'.($c == "Pacific/Ponape" ? $s : "").'>Ponape</option>
+       <option value="Asia/Pontianak"'.($c == "Asia/Pontianak" ? $s : "").'>Pontianak</option>
+       <option value="America/Port-au-Prince"'.($c == "America/Port-au-Prince" ? $s : "").'>Port-au-Prince</option>
+       <option value="Pacific/Port_Moresby"'.($c == "Pacific/Port_Moresby" ? $s : "").'>Port Moresby</option>
+       <option value="America/Port_of_Spain"'.($c == "America/Port_of_Spain" ? $s : "").'>Port of Spain</option>
+       <option value="Africa/Porto-Novo"'.($c == "Africa/Porto-Novo" ? $s : "").'>Porto-Novo</option>
+       <option value="America/Porto_Acre"'.($c == "America/Porto_Acre" ? $s : "").'>Porto Acre</option>
+       <option value="America/Porto_Velho"'.($c == "America/Porto_Velho" ? $s : "").'>Porto Velho</option>
+       <option value="Europe/Prague"'.($c == "Europe/Prague" ? $s : "").'>Prague</option>
+       <option value="America/Puerto_Rico"'.($c == "America/Puerto_Rico" ? $s : "").'>Puerto Rico</option>
+       <option value="Asia/Pyongyang"'.($c == "Asia/Pyongyang" ? $s : "").'>Pyongyang</option>
+       <option value="Asia/Qatar"'.($c == "Asia/Qatar" ? $s : "").'>Qatar</option>
+       <option value="Asia/Qyzylorda"'.($c == "Asia/Qyzylorda" ? $s : "").'>Qyzylorda</option>
+       <option value="America/Rainy_River"'.($c == "America/Rainy_River" ? $s : "").'>Rainy River</option>
+       <option value="Asia/Rangoon"'.($c == "Asia/Rangoon" ? $s : "").'>Rangoon</option>
+       <option value="America/Rankin_Inlet"'.($c == "America/Rankin_Inlet" ? $s : "").'>Rankin Inlet</option>
+       <option value="Pacific/Rarotonga"'.($c == "Pacific/Rarotonga" ? $s : "").'>Rarotonga</option>
+       <option value="America/Recife"'.($c == "America/Recife" ? $s : "").'>Recife</option>
+       <option value="America/Regina"'.($c == "America/Regina" ? $s : "").'>Regina</option>
+       <option value="America/Resolute"'.($c == "America/Resolute" ? $s : "").'>Resolute</option>
+       <option value="Indian/Reunion"'.($c == "Indian/Reunion" ? $s : "").'>Reunion</option>
+       <option value="Atlantic/Reykjavik"'.($c == "Atlantic/Reykjavik" ? $s : "").'>Reykjavik</option>
+       <option value="Europe/Riga"'.($c == "Europe/Riga" ? $s : "").'>Riga</option>
+       <option value="America/Rio_Branco"'.($c == "America/Rio_Branco" ? $s : "").'>Rio Branco</option>
+       <option value="America/Argentina/Rio_Gallegos"'.($c == "America/Argentina/Rio_Gallegos" ? $s : "").'>Rio Gallegos</option>
+       <option value="Asia/Riyadh"'.($c == "Asia/Riyadh" ? $s : "").'>Riyadh</option>
+       <option value="Europe/Rome"'.($c == "Europe/Rome" ? $s : "").'>Rome</option>
+       <option value="America/Rosario"'.($c == "America/Rosario" ? $s : "").'>Rosario</option>
+       <option value="Antarctica/Rothera"'.($c == "Antarctica/Rothera" ? $s : "").'>Rothera</option>
+       <option value="Asia/Saigon"'.($c == "Asia/Saigon" ? $s : "").'>Saigon</option>
+       <option value="Pacific/Saipan"'.($c == "Pacific/Saipan" ? $s : "").'>Saipan</option>
+       <option value="Asia/Sakhalin"'.($c == "Asia/Sakhalin" ? $s : "").'>Sakhalin</option>
+       <option value="Europe/Samara"'.($c == "Europe/Samara" ? $s : "").'>Samara</option>
+       <option value="Asia/Samarkand"'.($c == "Asia/Samarkand" ? $s : "").'>Samarkand</option>
+       <option value="Pacific/Samoa"'.($c == "Pacific/Samoa" ? $s : "").'>Samoa</option>
+       <option value="US/Samoa"'.($c == "US/Samoa" ? $s : "").'>Samoa</option>
+       <option value="America/Argentina/San_Juan"'.($c == "America/Argentina/San_Juan" ? $s : "").'>San Juan</option>
+       <option value="Europe/San_Marino"'.($c == "Europe/San_Marino" ? $s : "").'>San Marino</option>
+       <option value="America/Santiago"'.($c == "America/Santiago" ? $s : "").'>Santiago</option>
+       <option value="America/Santo_Domingo"'.($c == "America/Santo_Domingo" ? $s : "").'>Santo Domingo</option>
+       <option value="America/Sao_Paulo"'.($c == "America/Sao_Paulo" ? $s : "").'>Sao Paulo</option>
+       <option value="Africa/Sao_Tome"'.($c == "Africa/Sao_Tome" ? $s : "").'>Sao Tome</option>
+       <option value="Europe/Sarajevo"'.($c == "Europe/Sarajevo" ? $s : "").'>Sarajevo</option>
+       <option value="Canada/Saskatchewan"'.($c == "Canada/Saskatchewan" ? $s : "").'>Saskatchewan</option>
+       <option value="America/Scoresbysund"'.($c == "America/Scoresbysund" ? $s : "").'>Scoresbysund</option>
+       <option value="Asia/Seoul"'.($c == "Asia/Seoul" ? $s : "").'>Seoul</option>
+       <option value="Asia/Shanghai"'.($c == "Asia/Shanghai" ? $s : "").'>Shanghai</option>
+       <option value="America/Shiprock"'.($c == "America/Shiprock" ? $s : "").'>Shiprock</option>
+       <option value="Europe/Simferopol"'.($c == "Europe/Simferopol" ? $s : "").'>Simferopol</option>
+       <option value="Asia/Singapore"'.($c == "Asia/Singapore" ? $s : "").'>Singapore</option>
+       <option value="Europe/Skopje"'.($c == "Europe/Skopje" ? $s : "").'>Skopje</option>
+       <option value="Europe/Sofia"'.($c == "Europe/Sofia" ? $s : "").'>Sofia</option>
+       <option value="Atlantic/South_Georgia"'.($c == "Atlantic/South_Georgia" ? $s : "").'>South Georgia</option>
+       <option value="Antarctica/South_Pole"'.($c == "Antarctica/South_Pole" ? $s : "").'>South Pole</option>
+       <option value="Atlantic/St_Helena"'.($c == "Atlantic/St_Helena" ? $s : "").'>St Helena</option>
+       <option value="America/St_Johns"'.($c == "America/St_Johns" ? $s : "").'>St Johns</option>
+       <option value="America/St_Kitts"'.($c == "America/St_Kitts" ? $s : "").'>St Kitts</option>
+       <option value="America/St_Lucia"'.($c == "America/St_Lucia" ? $s : "").'>St Lucia</option>
+       <option value="America/St_Thomas"'.($c == "America/St_Thomas" ? $s : "").'>St Thomas</option>
+       <option value="America/St_Vincent"'.($c == "America/St_Vincent" ? $s : "").'>St Vincent</option>
+       <option value="Atlantic/Stanley"'.($c == "Atlantic/Stanley" ? $s : "").'>Stanley</option>
+       <option value="Europe/Stockholm"'.($c == "Europe/Stockholm" ? $s : "").'>Stockholm</option>
+       <option value="America/Swift_Current"'.($c == "America/Swift_Current" ? $s : "").'>Swift Current</option>
+       <option value="Australia/Sydney"'.($c == "Australia/Sydney" ? $s : "").'>Sydney</option>
+       <option value="Antarctica/Syowa"'.($c == "Antarctica/Syowa" ? $s : "").'>Syowa</option>
+       <option value="Pacific/Tahiti"'.($c == "Pacific/Tahiti" ? $s : "").'>Tahiti</option>
+       <option value="Asia/Taipei"'.($c == "Asia/Taipei" ? $s : "").'>Taipei</option>
+       <option value="Europe/Tallinn"'.($c == "Europe/Tallinn" ? $s : "").'>Tallinn</option>
+       <option value="Pacific/Tarawa"'.($c == "Pacific/Tarawa" ? $s : "").'>Tarawa</option>
+       <option value="Asia/Tashkent"'.($c == "Asia/Tashkent" ? $s : "").'>Tashkent</option>
+       <option value="Asia/Tbilisi"'.($c == "Asia/Tbilisi" ? $s : "").'>Tbilisi</option>
+       <option value="America/Tegucigalpa"'.($c == "America/Tegucigalpa" ? $s : "").'>Tegucigalpa</option>
+       <option value="Asia/Tehran"'.($c == "Asia/Tehran" ? $s : "").'>Tehran</option>
+       <option value="Asia/Tel_Aviv"'.($c == "Asia/Tel_Aviv" ? $s : "").'>Tel Aviv</option>
+       <option value="America/Indiana/Tell_City"'.($c == "America/Indiana/Tell_City" ? $s : "").'>Tell City</option>
+       <option value="Asia/Thimbu"'.($c == "Asia/Thimbu" ? $s : "").'>Thimbu</option>
+       <option value="Asia/Thimphu"'.($c == "Asia/Thimphu" ? $s : "").'>Thimphu</option>
+       <option value="America/Thule"'.($c == "America/Thule" ? $s : "").'>Thule</option>
+       <option value="America/Thunder_Bay"'.($c == "America/Thunder_Bay" ? $s : "").'>Thunder Bay</option>
+       <option value="America/Tijuana"'.($c == "America/Tijuana" ? $s : "").'>Tijuana</option>
+       <option value="Africa/Timbuktu"'.($c == "Africa/Timbuktu" ? $s : "").'>Timbuktu</option>
+       <option value="Europe/Tirane"'.($c == "Europe/Tirane" ? $s : "").'>Tirane</option>
+       <option value="Europe/Tiraspol"'.($c == "Europe/Tiraspol" ? $s : "").'>Tiraspol</option>
+       <option value="Asia/Tokyo"'.($c == "Asia/Tokyo" ? $s : "").'>Tokyo</option>
+       <option value="Pacific/Tongatapu"'.($c == "Pacific/Tongatapu" ? $s : "").'>Tongatapu</option>
+       <option value="America/Toronto"'.($c == "America/Toronto" ? $s : "").'>Toronto</option>
+       <option value="America/Tortola"'.($c == "America/Tortola" ? $s : "").'>Tortola</option>
+       <option value="Africa/Tripoli"'.($c == "Africa/Tripoli" ? $s : "").'>Tripoli</option>
+       <option value="Pacific/Truk"'.($c == "Pacific/Truk" ? $s : "").'>Truk</option>
+       <option value="America/Argentina/Tucuman"'.($c == "America/Argentina/Tucuman" ? $s : "").'>Tucuman</option>
+       <option value="Africa/Tunis"'.($c == "Africa/Tunis" ? $s : "").'>Tunis</option>
+       <option value="Asia/Ujung_Pandang"'.($c == "Asia/Ujung_Pandang" ? $s : "").'>Ujung Pandang</option>
+       <option value="Asia/Ulaanbaatar"'.($c == "Asia/Ulaanbaatar" ? $s : "").'>Ulaanbaatar</option>
+       <option value="Asia/Ulan_Bator"'.($c == "Asia/Ulan_Bator" ? $s : "").'>Ulan Bator</option>
+       <option value="Etc/Universal"'.($c == "Etc/Universal" ? $s : "").'>Universal</option>
+       <option value="Asia/Urumqi"'.($c == "Asia/Urumqi" ? $s : "").'>Urumqi</option>
+       <option value="America/Argentina/Ushuaia"'.($c == "America/Argentina/Ushuaia" ? $s : "").'>Ushuaia</option>
+       <option value="Etc/UTC"'.($c == "Etc/UTC" ? $s : "").'>UTC</option>
+       <option value="Europe/Uzhgorod"'.($c == "Europe/Uzhgorod" ? $s : "").'>Uzhgorod</option>
+       <option value="Europe/Vaduz"'.($c == "Europe/Vaduz" ? $s : "").'>Vaduz</option>
+       <option value="America/Vancouver"'.($c == "America/Vancouver" ? $s : "").'>Vancouver</option>
+       <option value="Europe/Vatican"'.($c == "Europe/Vatican" ? $s : "").'>Vatican</option>
+       <option value="America/Indiana/Vevay"'.($c == "America/Indiana/Vevay" ? $s : "").'>Vevay</option>
+       <option value="Europe/Vienna"'.($c == "Europe/Vienna" ? $s : "").'>Vienna</option>
+       <option value="Asia/Vientiane"'.($c == "Asia/Vientiane" ? $s : "").'>Vientiane</option>
+       <option value="Europe/Vilnius"'.($c == "Europe/Vilnius" ? $s : "").'>Vilnius</option>
+       <option value="America/Indiana/Vincennes"'.($c == "America/Indiana/Vincennes" ? $s : "").'>Vincennes</option>
+       <option value="America/Virgin"'.($c == "America/Virgin" ? $s : "").'>Virgin</option>
+       <option value="Asia/Vladivostok"'.($c == "Asia/Vladivostok" ? $s : "").'>Vladivostok</option>
+       <option value="Europe/Volgograd"'.($c == "Europe/Volgograd" ? $s : "").'>Volgograd</option>
+       <option value="Antarctica/Vostok"'.($c == "Antarctica/Vostok" ? $s : "").'>Vostok</option>
+       <option value="Pacific/Wake"'.($c == "Pacific/Wake" ? $s : "").'>Wake</option>
+       <option value="Pacific/Wallis"'.($c == "Pacific/Wallis" ? $s : "").'>Wallis</option>
+       <option value="Europe/Warsaw"'.($c == "Europe/Warsaw" ? $s : "").'>Warsaw</option>
+       <option value="Australia/West"'.($c == "Australia/West" ? $s : "").'>West</option>
+       <option value="Brazil/West"'.($c == "Brazil/West" ? $s : "").'>West</option>
+       <option value="America/Whitehorse"'.($c == "America/Whitehorse" ? $s : "").'>Whitehorse</option>
+       <option value="America/Indiana/Winamac"'.($c == "America/Indiana/Winamac" ? $s : "").'>Winamac</option>
+       <option value="Africa/Windhoek"'.($c == "Africa/Windhoek" ? $s : "").'>Windhoek</option>
+       <option value="America/Winnipeg"'.($c == "America/Winnipeg" ? $s : "").'>Winnipeg</option>
+       <option value="America/Yakutat"'.($c == "America/Yakutat" ? $s : "").'>Yakutat</option>
+       <option value="Asia/Yakutsk"'.($c == "Asia/Yakutsk" ? $s : "").'>Yakutsk</option>
+       <option value="Australia/Yancowinna"'.($c == "Australia/Yancowinna" ? $s : "").'>Yancowinna</option>
+       <option value="Pacific/Yap"'.($c == "Pacific/Yap" ? $s : "").'>Yap</option>
+       <option value="Asia/Yekaterinburg"'.($c == "Asia/Yekaterinburg" ? $s : "").'>Yekaterinburg</option>
+       <option value="America/Yellowknife"'.($c == "America/Yellowknife" ? $s : "").'>Yellowknife</option>
+       <option value="Asia/Yerevan"'.($c == "Asia/Yerevan" ? $s : "").'>Yerevan</option>
+       <option value="Canada/Yukon"'.($c == "Canada/Yukon" ? $s : "").'>Yukon</option>
+       <option value="Europe/Zagreb"'.($c == "Europe/Zagreb" ? $s : "").'>Zagreb</option>
+       <option value="Europe/Zaporozhye"'.($c == "Europe/Zaporozhye" ? $s : "").'>Zaporozhye</option>
+       <option value="Europe/Zurich"'.($c == "Europe/Zurich" ? $s : "").'>Zurich</option>
+     </select>';
+}
+
+?>

@@ -1,0 +1,69 @@
+<?php 
+/**
+ *  This code is licensed under the GPL.  See LICENSE.txt for more details.
+ */ 
+
+global $conf, $var, $user;
+
+// Set-once configuration options
+$conf = array(
+  'clamshell_home' => "http://localhost/clamshell",
+  'version' => "Version 0.6.8",
+
+  // localisation options
+  'lang'   => "en",
+  'locale' => "AU",
+  'charset' => "utf-8",
+
+  // data store options
+  'dir_webroot'  => getcwd(),
+  'dir_modules'  => "modules",
+  'dir_template' => "templates",
+  'dir_users'    => "users",
+  'dir_locale'   => "locale",
+
+  // Set opt_debug to TRUE to record progress in a log file
+  'opt_debug' => FALSE,
+  // Note that this has no effect for PHP >= 5.2.1 (uses system TEMP dir instead)
+  'opt_debug_dir' => 'C:\\TEMP',
+
+  // If mod_rewrite is enabled, set this to TRUE to return short OpenID for all handshakes
+  // Specifically, some sites will incorrectly use the returned HTTP address rather than
+  // the entered URL as the claimed OpenID
+  'opt_short_openid' => FALSE,
+  
+  // Set to TRUE to force use of a cryptographically-secure random source
+  'opt_secure_only' => FALSE,
+
+  // Choose the default authentication method for users
+  // Valid options to date are 'digest' or 'form'
+  'opt_auth_mode_default' => 'form',
+
+  // Prompt before each connection request?
+  'opt_auth_confirm_default' => FALSE,
+
+  // Set the OpenID user that has administration rights
+  'opt_user_admin' => 'admin',
+
+  // Display profile details on user home page?
+  'opt_profile_public_default' => TRUE,
+  // Details to display if profile is public 
+  'opt_profile_display' => array('nickname', 'fullname'),
+  
+  // Automatically prompt for admin password if missing?  Set this to
+  // FALSE for greater security
+  'opt_auto_admin_setup' => TRUE,
+
+  // Password security options
+  'opt_max_pwd_attempts' => 4
+);
+
+// Merge in user options
+include("conf/prefs.module");
+$conf = array_merge($conf, $userConf);
+
+// Localised strings
+include_once (conf("%%1/%%2-%%3/message.txt", 'dir_locale', 'lang', 'locale'));
+include_once (conf("%%1/%%2-%%3/error.txt",   'dir_locale', 'lang', 'locale'));
+
+?>

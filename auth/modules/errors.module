@@ -1,0 +1,60 @@
+<?php
+/*
+ * Clamshell - A standalone OpenID Identity Provider
+ * Version: 0.1
+ *
+ * Original phpMyID code by CJ Niemira (c) 2006-2007
+ * Modified by Stephen Bounds (C) 2007.
+ *
+ * This code is licensed under the GNU General Public License
+ * http://www.gnu.org/licenses/gpl.html
+ *
+ */
+
+/**
+ *  Exception handling functions
+ */
+
+function error_400 ( $error = NULL, $explain = NULL ) {
+  header(t('400_header'));
+  if (!$explain) $explain = t("error_unknown");
+  wrap_html($explain, $error ? $error : t('400_title'));
+}
+
+function error_500 ( $error = 'Internal Server Error', $explain = NULL ) {
+  header(t('500_header'));
+  if (!$explain) $explain = t("error_unknown");
+  wrap_html($explain, $error);
+}
+
+function error_get ( $url, $message = NULL) {
+  wrap_location($url, array('mode' => 'error', 'error' => ($message ? $message : t('400_title')) ) );
+}
+
+function error_post ( $error = 'Bad Request', $explain = NULL ) {
+  header(t('400_header'));
+  if (!$explain) $explain = t('clamshell_post_error');
+  wrap_html($explain, $error);
+  exit(0);
+}
+
+function debug($x, $m = null) {
+  if (!t('opt_debug'))
+    return true;
+
+  if (!is_writable(dirname(t('logfile'))) &! is_writable(t('logfile')))
+    error_500(t("%%1: %%2", 'no_debug_access', 'logfile'));
+
+  if (is_array($x)) {
+    ob_start();
+    print_r($x);
+    $x = date("[d-m-Y H:i:s] ").$m . ($m != null ? "\n" : '') . ob_get_clean();
+
+  } else {
+    $x .= date("[d-m-Y H:i:s]")."\n";
+  }
+
+  error_log($x . "\n", 3, t('logfile'));
+}
+
+?>

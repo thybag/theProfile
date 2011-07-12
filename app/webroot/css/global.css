@@ -1,0 +1,564 @@
+/*
+ Main CSS Document for theProfile
+ @author Carl Saggs, David Couch and Michael Pontin
+ @created Feb 2 2011
+*/
+body {
+	background-color: #444;
+	font-family:  "Myriad Pro", Arial, Helvetica, sans-serif;
+}
+img {
+	border: none;
+}
+.bold {
+	font-weight: bold;
+}
+.center {
+	text-align: center;
+}
+/*
+ the styling for the sub-body
+*/
+#container {
+	width: 960px;
+	margin: 0 auto;
+	background-color: #000;
+	-webkit-border-top-left-radius: 10px;
+	-webkit-border-top-right-radius: 10px;
+	-moz-border-radius-topleft: 10px;
+	-moz-border-radius-topright: 10px;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+	-o-border-top-left-radius: 10px;
+	-o-border-top-right-radius: 10px;
+}
+
+#header .top {
+	margin-top:5px;
+	
+	padding: 6px;
+	height: 130px;
+	color: #fff;
+	font-weight: strong;
+}
+
+#header .userControl {
+	padding: 10px;
+	padding-top: 20px;
+	
+}
+#header .userControl form input{
+	color:#000;
+}
+#header .userControl form span{
+	color:#000;
+}
+#header .userControl form .white {
+	color: #FFF;
+}
+#header .userControl form .white a {
+	text-decoration: underline;
+}
+
+#header .userControl span {
+	font-size: 11px;
+}
+
+#header .userControl span a {
+	color: #fff;
+	text-decoration: none;
+}
+
+#header .menu {
+	margin-top: 10px;
+	height: 25px;
+}
+
+#header .menu ul {
+	padding: 0;
+	margin: 0;
+}
+
+#header .menu ul li {
+	display: inline;
+	list-style: none;
+	float: left;
+}
+
+#header .menu ul li a {
+	width: 310px;
+	display: block;
+	padding: 4px;
+	margin: 1px;
+	text-align: center;
+	background-color: #72b34b;
+	color: #fff;
+	text-decoration: none;
+}
+
+#header .menu ul li a:hover {
+	background-color: #ccc;	
+	background-image: none;
+	color: #000;
+}
+
+#flashMessage {
+	background-image: url('../img/icons/error.png');
+	background-position: 10px center ;
+	background-repeat: no-repeat;
+	margin-top: 10px;
+	background-color: #FFF467;
+	padding: 5px;
+	padding-left:30px;
+}
+
+.content {
+	margin-top: 10px;
+}
+
+.content .secondLevelTabs {
+	padding: 0;
+	margin: 0;
+	height: 31px;
+	overflow:auto;	
+}
+
+.content .secondLevelTabs  li {
+	display: inline;
+	list-style: none;
+	float: left;	
+}
+
+.content .secondLevelTabs li a {
+	-webkit-border-top-left-radius: 5px;
+	-webkit-border-top-right-radius: 5px;
+	-moz-border-radius-topleft: 5px;
+	-moz-border-radius-topright: 5px;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	-o-border-top-left-radius: 5px;
+	-o-border-top-right-radius: 5px;
+	width: 120px;
+	display: block;
+	padding: 4px;
+	margin-right: 2px;
+	margin-bottom: 0;
+	margin-left: 0px;
+	margin-top:4px;
+	text-align: center;
+	background-color: #ccc;
+	color: #000;
+	text-decoration: none;
+}
+
+.content .secondLevelTabs li img {
+	border-width: 0px;
+	padding-bottom: 4px;
+	padding-top: 2px;
+}
+.content .secondLevelTabs li a:hover img{
+	padding-bottom: 8px;	
+}
+.content .secondLevelTabs li a:hover {
+	background-color: #eee;
+	margin-top: 0px;
+	padding-bottom: 8px;
+}
+
+.content .secondLevelTabs li.current a {
+	background-color: #fff;
+}
+
+.content .secondLevelTabs li.new a {
+	width: 20px;
+	font-size: 18px;
+	padding-bottom: 1px;
+}
+
+.content .mainContent {
+	background-color: #fff;
+	padding: 10px;
+	padding-bottom: 20px;
+}
+
+.content .mainContent .userDetails {
+	height: 180px;
+}
+
+.content .mainContent .userDetails #images_section {
+	float: left;
+	width: 160px;
+	padding: 8px;
+}
+.content .mainContent .userDetails #images_section h4 {
+	font-size:14px;
+	padding: 1px;margin: 1px;
+}
+
+.content .mainContent .userDetails #profile_section {
+	float: left;
+	width: 750px;
+	padding: 6px;
+}
+
+.content .mainContent .userDetails #profile_section h1 {
+	margin: 10px;
+	margin-left: 0;
+	padding: 0;
+}
+
+.content .mainContent .column {
+	float: left;
+	width: 470px;
+}
+
+.content .mainContent .module {
+	width: 460px;
+	margin: 5px;
+	border: solid 1px #c1c1c1;
+}
+.content .mainContent .fullwidth {
+	width: 930px;
+}
+
+.content .mainContent .topmod {
+	float: right;
+	margin-top:-80px;
+}
+.content .mainContent .module #openid {
+	background-image: url("../img/openid-logo-wordmark.jpg");
+	background-position: bottom right;
+	background-repeat: no-repeat;
+	
+}
+
+
+.content .mainContent .module h4, .faq h4  {
+	margin: 0;
+	padding: 0;
+	background-color: #72b34b;
+	color: #FFF;
+	font-weight: normal;
+	padding: 4px;
+}
+
+#signinbox {
+	float: right;
+	margin-top: -100px;
+}
+
+#signinbox span .dijitButtonNode {
+	height: 26px; 
+	width: 216px;
+	position: relative;
+	right: -23px;
+}
+#signinbox #dijit_form_Button_1_label {
+	margin-top: 4px;
+}
+.controls img{
+	opacity:0.4;
+}
+.controls a:hover img{
+	opacity:0.8;
+}
+
+.tag {
+	color: #970080;
+	font-weight: bold;
+}
+.codeOutput {
+	border: 1px solid #c1c1c1;
+	margin: 10px;
+	padding: 10px;
+}
+/* Numbers */
+.number, .email {
+	 height:20px;
+	 margin-bottom:6px;
+}
+
+.number .tel {
+	float:right;
+}
+.number .tel .controls {
+	padding-left:10px;
+}
+/*address */
+.address {
+	 margin-bottom:10px;
+}
+
+
+.address .addr .type {font-weight:bold;}
+.address .addr .controls {
+	float:right; padding-top:2px;
+}
+
+/* Emails */
+ .email .controls {
+	float:right; padding-top:2px;
+}
+
+
+/* Applications */
+
+.application {
+	 height:30px;
+	 padding-left: 30px;
+	 background-position: 5px 2px;
+	 background-repeat: no-repeat;
+	 margin-bottom:6px;
+}
+.app_Facebook {	
+	background-image: url('http://facebook.com/favicon.ico');
+}
+.app_Google {
+	background-image: url('https://www.google.com/favicon.ico');
+}
+.app_Twitter {
+	background-image: url('http://twitter.com/favicon.ico');
+}
+.app_OpenID {
+	background-image: url('http://openid.net/favicon.ico');
+}
+.application .app {
+	
+}
+.application .app .controls {
+	padding-left:10px; float:right;
+}
+/* Identity (bio) */
+
+#profile_section .bio {
+	float:right;
+	width:250px;
+}
+
+
+/* DIALOGS */
+.dijitDialog {font-size:14px; border: 1px solid #c1c1c1 !important;}
+.dijitDialogPaneContent .content {
+	padding:0; margin:0;
+}
+.dijitDialogPaneContent .content .mainContent{
+	text-align:left; padding:0; margin:0;
+}
+.dijitDialogPaneContent .content .mainContent form{
+width:400px;
+}
+.dijitDialogPaneContent .mainContent h1 {padding-top:0;margin-top:0;}
+.dijitDialogTitleBar { background:#72B34B !important;}
+.dijitDialogTitle { font-weight:normal !important; color:#fff;font-size:16px;}
+
+
+
+
+
+
+.content .mainContent .module .text {
+	padding: 6px;
+}
+.content .mainContent .module .text .smalltext{
+	font-size:12px;
+}
+.content .mainContent .module .text .bigtext{
+	font-size:1.2em;
+}
+.content a {
+	color: #777;
+}
+
+#images_section .sub_section img {
+	border: none;
+}
+
+.clear {
+	clear: both;
+}
+
+.faq {
+	border: solid 1px #c1c1c1;
+	width: 450px;
+	float: left;
+	margin: 10px 10px 0 0;
+}
+.faq p {
+	padding: 5px;
+}
+.italic {
+	font-style: italic;
+}
+.error-message {
+	color: #FF0000;
+}
+
+#facebook_section, #google_section, #openid_section, #scratch_section{
+	height: 145px;	
+	width: 46%;
+}
+
+#OpenidLoginForm
+{
+	margin-left: 40px;
+}
+
+#OpenidLoginForm .input
+{
+	float: left;
+	margin-left: 64px;
+}
+
+#google_section img {
+	border: none;
+	margint-bottom: -3px;
+}
+#scratch_section, #facebook_section, #google_section, #openid_section{
+	float: left;
+	padding: 10px;
+	padding-top: 0px;
+	text-align: center;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+	-o-border-radius: 10px;
+	border: 1px solid #c1c1c1;
+	margin: 7px;
+}
+
+/*#openid_section{
+	background-color: #DEEF23;
+	background-image: url('../img/construction.gif');
+	background-position: left top;
+	background-repeat: no-repeat;
+}*/
+
+/*#scratch_section {
+	width: 96%;
+}*/
+
+#app_select {
+	list-style: none;
+}
+#app_select li {
+	padding: 5px;
+}
+#app_select img {
+	border: none;
+}
+/* CSS for the Forms */
+.userControl #UserLoginForm {
+	width: 250px;
+}
+.userControl #UserLoginForm .submit {
+	width: 221px;
+}
+form {
+	width: 512px;
+}	
+form label {
+	float: left;
+	text-align: right;
+	width: 27%;
+	padding-right: 2px;
+	margin-right: 2px;
+}
+form .submit {
+	text-align: right; 
+	width: 290px; 
+	height: 24px; 
+	margin-top: 5px;
+}
+form div {
+	margin-bottom: 2px;
+}
+form .error-message {
+	margin-left: 5px;
+	display: inline;
+}
+.ajax_success {
+	color: #036A0D;
+}
+
+.ajax_error {
+	color: #FF0000;
+}
+
+#error_page {
+	color: #FFF;
+	padding-left: 15px;
+	font-size: 140%;
+}
+/*
+ the styling for the footer
+*/
+#footer {
+	margin-top: 2px;
+	font-size: 10pt;
+	text-align: center;
+	background-color: #72b34b;
+	color: white;
+	padding: 7px;
+}
+
+#footer a:link {
+	color: #fff;
+	text-decoration: none;
+}
+
+#footer a:hover {
+	color: #fff;
+	text-decoration: underline;
+}
+
+#footer a:visited {
+	color: #fff;
+	text-decoration: none;
+}
+
+.mergeLine { 
+	margin-bottom:0px;
+}
+.mergeLine .clear { 
+	
+	clear:left;
+}
+.mergeLine .merge_title { 
+	width:120px; 
+	padding:6px; 
+	float:left; 
+	margin:1px; 
+	background-color: #ddd; 
+	font-weight:bold;
+	margin-bottom:0px;
+}
+.mergeLine .mergeCur {
+	width:150px !important;
+	margin-bottom:0px;
+}
+.mergeLine .mergeOther {
+	width:260px !important;
+	float:left; 
+	margin-bottom:0px;
+}
+.mergeLine .long {
+	width:280px;
+	float:left; 
+	margin-left:0;
+	margin-bottom:0px;
+}
+.mergeLine .mergeSelected { background-color: #67ca35 !important; cursor: auto !important;}
+	
+	
+.mergeLine .mergeItem { 
+	padding:6px;
+	float:left;
+	margin:1px;
+	background-color: #eee;
+	cursor:pointer;
+	margin-bottom:0px;
+}
+/*
+.mergeLine .mergeHeader {font-weight:bold; background-color: #ddd; cursor: auto}
+
+*/

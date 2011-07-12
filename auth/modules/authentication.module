@@ -1,0 +1,269 @@
+<?php
+/*
+ * Authentication code.  Currently supported modes:
+ *  - HTTP Digest Authentication
+ *  - HTML Forms
+ * Licensed under the GPL [http://www.gnu.org/licenses/gpl.html]
+ */
+
+require_once('trustroot.module');
+
+function authentication_digest() {
+  // try to get the digest headers - what a PITA!
+  if (function_exists('apache_request_headers') && ini_get('safe_mode') == false) {
+    $arh = apache_request_headers();
+    $hdr = $arh['Authorization'];
+
+  } elseif (isset($_SERVER['PHP_AUTH_DIGEST'])) {
+    $hdr = $_SERVER['PHP_AUTH_DIGEST'];
+
+  } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    $hdr = $_SERVER['HTTP_AUTHORIZATION'];
+
+  } elseif (isset($_ENV['PHP_AUTH_DIGEST'])) {
+    $hdr = $_ENV['PHP_AUTH_DIGEST'];
+
+  } elseif (isset($_GET['auth'])) {
+    $auth = substr($_SERVER['QUERY_STRING'], strpos($_SERVER['QUERY_STRING'], "auth="));
+    $hdr = stripslashes(urldecode($auth)); 
+
+  } else {
+    $hdr = null;
+  }
+
+  debug('Authorization header: ' . $hdr);
+  $digest = substr($hdr,0,7) == 'Digest '
+    ?  substr($hdr, strpos($hdr, ' ') + 1)
+    : $hdr;
+
+  $stale = false;
+  $requester = authentication_requesting_host();
+
+  // is the user trying to log in?
+  if (!is_null($digest) && !t('authorized')) {
+    debug('Digest headers: ' . $digest);
+    $hdr = array();
+
+    // decode the Digest authorization headers
+    preg_match_all('/(\w+)=(?:"([^"]+)"|([^\s,]+))/', $digest, $mtx, PREG_SET_ORDER);
+
+    foreach ($mtx as $m)
+      $hdr[$m[1]] = $m[2] ? $m[2] : $m[3];
+    debug($hdr, 'Parsed digest headers:');
+
+    if (isset($_SESSION['openid'][$requester]['nonce']) 
+           && $hdr['nonce'] != $_SESSION['openid'][$requester]['nonce']) {
+      $stale = true;
+      unset($_SESSION['openid'][$requester]['nonce']);
+    }
+
+    if (t('auth_username') == $hdr['username'] && !$stale) {
+
+      // the entity body should always be null in this case
+      $entity_body = '';
+      $a1 = t('auth_password');
+      $a2 = $hdr['qop'] == 'auth-int'
+        ? md5(implode(':', array($_SERVER['REQUEST_METHOD'], $hdr['uri'], md5($entity_body))))
+        : md5(implode(':', array($_SERVER['REQUEST_METHOD'], $hdr['uri'])));
+      $ok = md5(implode(':', array($a1, $hdr['nonce'], $hdr['nc'], $hdr['cnonce'], $hdr['qop'], $a2)));
+
+      // successful login!
+      if ($hdr['response'] == $ok) {
+        debug('Authentication successful');
+        debug('User session is: ' . session_id());
+        $_SESSION['auth_username'] = $hdr['username'];
+        $_SESSION['auth_url'] = t('idp_url');
+        set_t('authorized', TRUE);
+
+        // return to the refresh url if they get in
+        wrap_refresh($_SESSION['post_auth_url'], t('msg_login_success'));
+
+      // too many failures
+      } elseif (strcmp($hdr['nc'], 4) > 0 || $_SESSION['failures'] > t('opt_max_pwd_attempts')) {
+        debug('Too many password failures');
+        error_get($_SESSION['cancel_auth_url'], t('msg_login_failure_perm'));
+
+      // failed login
+      } else {
+        $_SESSION['failures']++;
+        debug('Login failed: ' . $hdr['response'] . ' != ' . $ok);
+        debug('Fail count: ' . $_SESSION['failures']);
+      }
+    }
+
+  } elseif (is_null($digest) && !t('authorized') && isset($_SESSION['openid'][$requester]['nonce'])) {
+    error_500(err('missing_auth_header'));
+  }
+
+  // if we get this far the user is not authorized, so send the headers
+  $uid = openid_nonce($requester);
+
+  debug('Prompting user to log in. Stale? ' . $stale);
+  header(sprintf('WWW-Authenticate: Digest qop="auth-int, auth", realm="%s", domain="%s", nonce="%s", opaque="%s", stale="%s", algorithm="MD5"', t('auth_realm'), t('auth_domain'), $uid, md5(t('auth_realm')), $stale ? 'true' : 'false'));
+  header(t('401_header'));
+  $q = strpos($_SESSION['cancel_auth_url'], '?') ? '&' : '?';
+  wrap_refresh($_SESSION['cancel_auth_url'] . $q . 'openid.mode=cancel', t('msg_cancel_request'));
+}
+
+function authentication_form() {
+  $stale = FALSE;
+  $is_attempt = FALSE;
+  $requester = authentication_requesting_host();
+
+  // is the user trying to log in?
+  if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid'][$requester]['nonce']) {
+    debug('Posted values: '.var_export($_POST, TRUE));
+    $is_attempt = TRUE;
+
+    if ($_POST['cancel']) {
+      $q = strpos($_SESSION['cancel_auth_url'], '?') ? '&' : '?';
+      wrap_refresh($_SESSION['cancel_auth_url'] . $q . 'openid.mode=cancel', t('msg_cancel_request'));
+    }
+
+    if (isset($_SESSION['openid'][$requester]['nonce']) 
+         && $_POST['nonce'] != $_SESSION['openid'][$requester]['nonce']) {
+      $stale = true;
+      unset($_SESSION['openid'][$requester]['nonce']);
+    }
+
+    if (t('auth_username') == $_POST['username'] && !$stale) {
+
+      // successful login!
+     //if (md5(s('%%1:%%2:%%3', $_POST['username'], t('auth_realm'), $_POST['pwd'])) == t('auth_password')) {
+        if (sha1($_POST['pwd']) == t('auth_password')) {
+        
+        
+        debug('Authentication successful');
+        debug('User session is: ' . session_id());
+        $_SESSION['auth_username'] = $_POST['username'];
+        $_SESSION['auth_url'] = t('idp_url');
+        set_t('authorized', TRUE);
+
+        // return to the refresh url if they get in
+        wrap_refresh($_SESSION['post_auth_url'], t('msg_login_success'));
+      }
+    }
+  }
+    
+  // too many failures
+  if ($_SESSION['failures'] > t('opt_max_pwd_attempts')) {
+    debug('Too many password failures.');
+    error_get($_SESSION['cancel_auth_url'], t('msg_login_failure_temp'));
+
+  // failed login
+  } else {
+    $_SESSION['failures']++;
+    debug('Login failed:  Password hash did not match');
+    debug('Fail count: ' . $_SESSION['failures']);
+  }
+
+  // if we get this far the user is not authorized, so show the form
+  $uid = openid_nonce($requester);
+  read_user_profile(); set_profile();
+  $header = t(t('msg_password_set'), 'auth_username');
+  $body = 
+    ($isAttempt ? t("<div style='color: red'><em>%%1</em></div>", 'msg_login_failure') : "") .
+    s("%%1
+    <form method='POST'>
+      <table border='0'>
+      <tr><td>%%2</td><td><input name='username' value='%%4' /></td></tr>
+      <tr><td>%%3</td><td><input type='password' name='pwd' /></td></tr>
+      <tr><td><input type='submit' value='Submit' />
+      <input type='submit' name='cancel' value='Cancel' /></td></tr>
+      <input type='hidden' name='nonce' value='%%5' />
+      </table>
+    </form>", t('user_edit_caption'), t('msg_username'), t('msg_password'),
+              t('auth_username'), $uid);
+  $footer = FALSE;
+  include("templates/display.tpl.php");
+}
+
+function authentication_mode_choice() {
+  return s(
+    '<select name="auth_mode">
+       <option value="digest" %%3>%%1 %%2</option>
+       <option value="form" %%6>%%4 %%5</option>
+     </select>',
+     t('auth_method_http_digest'), 
+     (t('opt_auth_mode_default')=='digest' ? '(Default)' : ''),
+     (t('auth_mode')=='digest' ? 'selected="selected"' : ''),
+
+     t('auth_method_form'),
+     (t('opt_auth_mode_default')=='form'   ? '(Default)' : ''),
+     (t('auth_mode')=='form'   ? 'selected="selected"' : '')     
+  );
+}
+
+function authentication_confirm_choice() {
+  return s(
+    '<input type="radio" %%3 name="auth_confirm" value="yes" /> %%1 &nbsp;
+     <input type="radio" %%4 name="auth_confirm" value="no" /> %%2',
+     t('yes'), t('no'),
+     (t('auth_confirm')  ? 'checked="checked"' : ''),
+     (!t('auth_confirm') ? 'checked="checked"' : '')     
+  );
+}
+
+function authentication_confirm() {
+  $requester = authentication_requesting_host();
+
+  if (!authentication_is_whitelisted($requester) && !($_SESSION['openid'][$requester]['confirm'] == 'allowed')) {
+    if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid'][$requester]['nonce']) {
+      if (isset($_SESSION['openid'][$requester]['confirm'])) {
+        $allow = $_SESSION['openid'][$requester]['confirm'];
+      } else {
+        if (isset($_POST['allow'])) {
+          $allow = 'allowed';
+          $_SESSION['openid'][$requester]['confirm'] = 'allowed';
+        }
+        if (isset($_POST['deny'])) {
+          $allow = 'denied';
+          $_SESSION['openid'][$requester]['confirm'] = 'denied';
+        } 
+      }
+    } else {
+      $allow = 'pending'; unset ($_SESSION['openid'][$requester]['confirm']);
+      $uid = openid_nonce($requester); 
+      $displayUrl = (strlen($requester) > 80 ? substr($requester, 0, 77).'...' : $requester);
+      $header = t('confirm');
+      $body = s("<p>%%1</p>
+        <form method='POST'><p><input type='submit' name='allow' value='%%2' />
+          <input type='submit' name='deny' value='%%3' /></p>".
+          // TODO: No saving of whitelist yet <input type='checkbox' name='always' checked='checked' />
+          "<input type='hidden' name='saved_key' value='auth_confirm' />
+          <input type='hidden' name='nonce' value='%%4' />
+        </form>", s(t('msg_auth_request_confirm'), $displayUrl), 
+                  t('allow'), t('deny'), $uid);
+      $footer = FALSE; 
+      include("templates/display.tpl.php");      
+    }
+  } else {
+    $allow = 'allowed';
+  }
+  return $allow;
+}
+
+function authentication_requesting_host() {
+  if ($_SESSION['cancel_auth_url']) {
+    $parts = _trustroot_parse($_SESSION['cancel_auth_url']);
+    return (!empty($parts['host']) ? $parts['host'] : '[unknown]');
+  } else {
+    return '[unknown]';
+  }
+}
+
+function authentication_is_whitelisted($url) {
+  // are we self-authenticating on Clamshell?
+  $parts = _trustroot_parse(t('clamshell_home'));
+  if (trim($url) == $parts['host']) {
+    return TRUE;
+  } else {
+    // or going to a designated whitelist site?
+    $whiteList = ( is_array(t('user_whitelist')) ? t('user_whitelist') : array() );
+    $whiteList = ( is_array(t('opt_whitelist'))  ? array_merge($whiteList, t('opt_whitelist')) : $whiteList );
+    foreach ($whiteList as $site) {
+      if (trim($site) == trim($whiteList)) return TRUE;
+    }
+    return FALSE;
+  }
+}

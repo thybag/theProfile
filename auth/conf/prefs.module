@@ -1,0 +1,23 @@
+<?php
+/**
+ *  This code is licensed under the GPL.  See LICENSE.txt for more details.
+ */ 
+
+global $userConf;
+
+$userConf = array(
+  // home page
+  'clamshell_home' => "http://localhost/clamshell",
+
+  // If mod_rewrite is enabled, set this to TRUE to return short OpenID for all handshakes
+  'opt_short_openid' => TRUE,
+   
+  // Set the default OpenID user to use if none is specified with ?u=user
+  // 'opt_user_default' => 'joebloggs',
+
+  // localisation options
+  'lang'   => "en",
+  'locale' => "AU"
+);
+
+?>

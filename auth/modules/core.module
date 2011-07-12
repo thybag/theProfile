@@ -1,0 +1,223 @@
+<?php
+
+/**
+ *  OpenID core functions
+ *
+ *  Modifications (C) 2007 Stephen Bounds.
+ * 
+ *  Original code (C) 2005 JanRain <openid@janrain.com>
+ *  Licensed under the LGPL.
+ */
+
+/**
+ * Load required modules and configure settings
+ */ 
+function clamshell_setup() {
+  ini_set('arg_separator.output', '&');
+
+  require_once 'config.module';
+  require_once 'output.module';
+  require_once 'modes.module';
+  require_once 'profile.module';
+  require_once 'secret.module';
+  require_once 'errors.module';
+  require_once 'diffie-hellman.module';
+
+  if (version_compare(phpversion(), '4.2.0', 'lt'))
+    error_500(err('no_min_required_php') . phpversion());
+
+  $extensions = array('session', 'pcre');
+  foreach ($extensions as $x) {
+    if (!extension_loaded($x))
+      @dl($x);
+    if (!extension_loaded($x))
+      error_500(s(t('missing_ext'), $x));
+  }
+
+  if (isset($_GET['admin']) && !read_user_profile() && t('opt_auto_admin_setup')) {
+    require_once 'modules/admin.module';
+    admin_first_time_setup();
+  }
+}
+
+/**
+ * Fix $_POST variables, which tend to rename openid.xxx to openid_xxx
+ */
+function clamshell_fix_post(&$post) {
+  foreach ($post as $key => $value) {
+    if (strpos($key, 'openid_ns_') === 0) {
+      $fixed_key = str_replace('openid_ns_', 'openid.ns.', $key);
+      unset($post[$key]);
+      $post[$fixed_key] = $value;
+    }
+    if (strpos($key, 'openid_sreg_') === 0) {
+      $fixed_key = str_replace('openid_sreg_', 'openid.sreg.', $key);
+      unset($post[$key]);
+      $post[$fixed_key] = $value;
+    }
+    if (strpos($key, 'openid_') === 0) {
+      $fixed_key = str_replace('openid_', 'openid.', $key);
+      unset($post[$key]);
+      $post[$fixed_key] = $value;
+    }
+  }
+}
+
+function get_run_mode() {
+  // Decide which runmode, based on user request or default
+  if (isset($_REQUEST['openid_mode'])) {
+    foreach(t('openid.opt.modes') as $mode) {
+      if (strpos($_REQUEST['openid_mode'], $mode) !== FALSE) {
+        debug("Run mode: $mode at: " . time());
+        return $mode;
+      }
+    }
+    return 'no';
+  } else {
+    return 'no';
+  }
+}
+
+/**
+ *  Define functions that may not exist in earlier PHP versions
+ */
+
+if (!function_exists('sys_get_temp_dir') && ini_get('open_basedir') == false) {
+  function sys_get_temp_dir () {
+    $keys = array('TMP', 'TMPDIR', 'TEMP');
+    foreach ($keys as $key) {
+      if (isset($_ENV[$key]) && is_dir($_ENV[$key]) && is_writable($_ENV[$key]))
+        return realpath($_ENV[$key]);
+    }
+
+    $tmp = tempnam(t('opt_debug_dir'), null);
+    if (file_exists($tmp)) {
+      $dir = realpath(dirname($tmp));
+      unlink($tmp);
+      return realpath($dir);
+    }
+
+    return realpath(dirname(__FILE__));
+  }
+} elseif (!function_exists('sys_get_temp_dir')) {
+  function sys_get_temp_dir () {
+    return realpath(dirname(__FILE__));
+  }
+}
+
+if (!function_exists('http_build_query')) {
+  function http_build_query ($array) {
+    $r = array();
+    foreach ($array as $key => $val)
+      $r[] = sprintf('%s=%s', $key, urlencode($val));
+    return implode('&', $r);
+  }
+}
+
+/**
+ *  Functions to set/read variables.
+ */
+
+/**
+ *  Transliterates profile properties.  Allows either vanilla lookup:
+ *
+ *    t("page_title")
+ *
+ *  or string replacement of the following form:
+ *
+ *    t("%%1 of %%2", 'page_title', 'search_page');
+ * 
+ *  In this example, "page_title" and "search_page" must exist in $var[].
+ */
+function t($key) {
+  if (func_num_args() > 1) {
+    $args = func_get_args();
+    return call_user_func_array("_t", $args);
+  } else {
+    return _t_lookup($key);
+  }
+}
+
+function _t() {
+  $args = func_get_args();
+  $argNum = func_num_args();
+  $output = $args[0];
+  // find and replace %%1, %%2, etc with their respective arguments
+  for ($i = 1; $i < $argNum; $i++) {
+    $subst = _t_lookup(func_get_arg($i));
+    $output = preg_replace("/%%$i(?![0-9])/", $subst, $output);
+  }
+  return $output;
+}
+
+function _t_lookup($key) {
+  global $conf, $var, $text;
+  // $var[] beats $conf[]; $conf[] beats $text[]
+  return (isset($var[$key]) ? $var[$key] : (isset($conf[$key]) ? $conf[$key] :  
+             (isset($text[$key]) ? $text[$key] : '')));
+}
+
+/**
+ *  Variable store for text and other info
+ */
+function set_t($key, $value) {
+  global $var;
+
+  if ($value || is_array($value)) {
+    $var[$key] = $value; return $value;
+  } else {
+    unset($var[$key]); return NULL;
+  }
+}
+
+/**
+ *  Conf-only lookup.  Use for sensitive data, eg. master password.
+ */
+function conf($key) {
+  if (func_num_args() > 1) {
+    $args = func_get_args();
+    return call_user_func_array("_conf", $args);
+  } else {
+    return _conf_lookup($key);
+  }
+}
+
+function _conf() {
+  $args = func_get_args();
+  $argNum = func_num_args();
+  $output = $args[0];
+  // find and replace %%1, %%2, etc with their respective arguments
+  for ($i = 1; $i < $argNum; $i++) {
+    $subst = _conf_lookup(func_get_arg($i));
+    $output = preg_replace("/%%$i(?![0-9])/", $subst, $output);
+  }
+  return $output;
+}
+
+function _conf_lookup($key) {
+  global $conf;
+  return $conf[$key];
+}
+
+/**
+ *  Error-only lookup.
+ */
+function err($key) {
+  global $error;
+  return $error[$key];
+}
+
+/**
+ *  String transliteration wrapper
+ */
+function s() {
+  $args = func_get_args();
+  $argNum = func_num_args();
+  $output = $args[0];
+  // find and replace %%1, %%2, etc with their respective arguments
+  for ($i = 1; $i < $argNum; $i++) {
+    $subst = func_get_arg($i);
+    $output = preg_replace("/%%$i(?![0-9])/", $subst, $output);
+  }
+  return $output;
+}

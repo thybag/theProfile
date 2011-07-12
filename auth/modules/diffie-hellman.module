@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * The OpenID library's Diffie-Hellman implementation.
+ *
+ *  Modifications (C) 2007 Stephen Bounds.
+ * 
+ *  Original code (C) 2005 JanRain <openid@janrain.com>
+ *  Licensed under the LGPL.
+ */
+
+require_once 'bigmath.module';
+require_once 'hmacsha1.module';
+require_once 'constants.module';
+
+/**
+ * The Diffie-Hellman key exchange module.
+ */
+function openid_dh_generate() {
+  global $BigMath;
+
+  $r = $BigMath->rand(OPENID_DH_MOD);
+  set_t('openid.keys.private', $BigMath->add($r, 1));
+  set_t('openid.keys.public',  $BigMath->powmod(OPENID_DH_GEN, t('openid.keys.private'), OPENID_DH_MOD));
+}
+
+function openid_nonce($url) {
+  $uid = md5(uniqid(mt_rand(1,9)));
+  $_SESSION['openid'][$url]['nonce'] = $uid;
+  return($uid);
+}
+
+function x_or($a, $b) {
+  $r = "";
+
+  for ($i = 0; $i < strlen($b); $i++)
+    $r .= $a[$i] ^ $b[$i];
+  debug("Xor size: " . strlen($r));
+  return $r;
+}
+
+?>

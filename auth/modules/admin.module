@@ -1,0 +1,238 @@
+<?php
+/*
+ * Clamshell Admin pages
+ * (C) 2007 Stephen Bounds.
+ *
+ * This code is licensed under the GNU General Public License
+ * http://www.gnu.org/licenses/gpl.html
+ *
+ */
+
+require_once 'authentication.module';
+require_once 'registration.module';
+
+function admin_authorize() {
+  user_session();
+
+  // save user chosen to administer
+  $_SESSION['openid-admin']['target'] = @$_GET['u'];
+    
+  if (t('authorized'))
+    return TRUE;
+
+  $keys = array(
+    'mode' => 'checkid_setup',
+    'identity' => t('idp_url'),
+    'return_to' => t('idp_url') 
+      .(strpos(t('idp_url'), '?') === FALSE ? 
+        '?admin=true' : '&admin=true')
+  );
+
+  wrap_location(t('idp_url'), $keys);
+}
+
+function admin_logout() {
+  user_session_destroy();
+  wrap_refresh(t('clamshell_home'), t('msg_logged_out'));
+}
+
+function admin_display() {
+  // jump to editing user if set
+  if (exist_profile($_SESSION['openid-admin']['target'])) {
+    $_POST['action'] = 'edit'; $_POST['target'] = $_SESSION['openid-admin']['target'];
+  }
+  unset($_SESSION['openid-admin']['target']);
+
+  // now display form or process as appropriate
+  if ($_POST) {
+    admin_process_form();
+    $user = $_POST['target'];
+
+    switch ($_POST['action']) {
+      case 'add':
+        if (exist_profile($user)) {
+          $header = err('cannot_complete_op');
+          $body = s(err('user_exists'), $user);
+        } else {
+          if ($_POST['pass'] != $_POST['confirm']) {
+            $header = err('no_pwd_match');
+            $body = err('check_pwds');
+            $footer = TRUE;
+            break;
+          }
+          set_t('auth_username', $user);
+          read_user_profile(); set_profile();
+          write_user_profile($user, generate_profile($user, $_POST['pass'], t('opt_auth_mode_default')), 
+                             NULL, t('simple_reg'));
+          $header = t('success');
+          $body = s(t('user_added'), $user);
+          $footer = TRUE;
+        }
+        break;
+      case 'edit':
+        if (exist_profile($user)) {
+          if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid-admin']['nonce']) {
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            write_user_profile($user, generate_profile($user, NULL, $_POST['auth_mode'], $_POST['auth_confirm']),
+                               NULL, NULL);
+            $header = t('success');
+            $body = s(t('user_updated'), $user);
+            $footer = TRUE;
+          } else {
+            $_SESSION['openid-admin']['nonce'] = $user.time();
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            include("templates/admin-edit.tpl.php");
+            return;
+          }
+        }
+        break;
+      case 'simpleReg':
+        $_POST['sreg']['dob'] = simple_reg_dob_to_string($_POST['sreg']['dob']);
+        if (exist_profile($user)) {
+          if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid-admin']['nonce']) {
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            write_user_profile($user, generate_profile($user, NULL, $_POST['auth_mode'], $_POST['auth_confirm']),
+                               NULL, $_POST['sreg']);
+            $header = t('success');
+            $body = s(t('user_updated'), $user);
+            $footer = TRUE;
+          } else {
+            $_SESSION['openid-admin']['nonce'] = $user.time();
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            include("templates/admin-edit.tpl.php");
+            return;
+          }
+        }
+        break;
+      case 'resetPwd':
+        if (exist_profile($user)) {
+          if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid-admin']['nonce']) {
+            if ($_POST['pass'] != $_POST['confirm']) {
+              $header = err('no_pwd_match');
+              $body = err('check_pwds');
+              $footer = TRUE;
+              break;
+            }
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            write_user_profile($user, generate_profile($user, $_POST['pass']), NULL, NULL);
+            $header = t('success');
+            $body = s(t('user_updated'), $user);
+            $footer = TRUE;
+          } else {
+            $_SESSION['openid-admin']['nonce'] = $user.time();
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            include("templates/admin-edit.tpl.php");
+            return;
+          }
+        }
+        break;
+      case 'delete':
+        if (exist_profile($user)) {
+          if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid-admin']['nonce']) {
+            set_t('auth_username', $user);
+            read_user_profile(); set_profile();
+            delete_user_profile($user, FALSE);
+            $header = t('success');
+            $body = s(t('user_deleted'), $user);
+            $footer = TRUE;
+          } else {
+            $_SESSION['openid-admin']['nonce'] = $user.time();
+            $header = t('confirm');
+            $body = s("<p>%%1</p>
+              <form method='POST'><input type='submit' name='delete[$user]' value='%%2' />
+                <input type='submit' name='cancel' value='%%3' />
+                <input type='hidden' name='nonce' value='".$_SESSION['openid-admin']['nonce']."' />
+              </form>", s(t('msg_confirm_delete'), $user), t('yes_long'), t('no_long'));
+            $footer = FALSE;
+          }
+        } else {
+          $header = t('cannot_complete_op');
+          $body = s(err('user_missing'), $user);
+          $footer = TRUE;
+        }
+        break;
+      case 'logout':
+        admin_logout();
+      default:
+        include("templates/admin.tpl.php");
+        unset($_SESSION['openid-admin']['nonce']);
+        return;
+        break;
+    }
+    include("templates/admin-results.tpl.php");
+  } else {
+    include("templates/admin.tpl.php");
+    unset($_SESSION['openid-admin']['nonce']);
+  }
+}
+
+function admin_process_form() {
+  if ($_POST['action'] == 'add') {
+    $_POST['target'] = $_POST['new'];
+  }
+  if (is_array(@$_POST['delete'])) {
+    $_POST['action'] = 'delete';
+    reset($_POST['delete']); $_POST['target'] = key($_POST['delete']);
+  }
+  if (is_array(@$_POST['edit'])) {
+    $_POST['action'] = 'edit';
+    reset($_POST['edit']); $_POST['target'] = key($_POST['edit']);
+  }
+  if (is_array(@$_POST['resetPwd'])) {
+    $_POST['action'] = 'resetPwd';
+    reset($_POST['resetPwd']); $_POST['target'] = key($_POST['resetPwd']);
+  }
+  if (is_array(@$_POST['simpleReg'])) {
+    $_POST['action'] = 'simpleReg';
+    reset($_POST['simpleReg']); $_POST['target'] = key($_POST['simpleReg']);
+  }
+}
+
+function admin_first_time_setup() {
+  session_start();
+ 
+  $user = conf('opt_user_admin');
+  if (isset($_POST['nonce']) && $_POST['nonce'] == $_SESSION['openid-admin']['nonce']) {
+    if ($_POST['pass'] != $_POST['confirm']) {
+      $header = err('no_pwd_match');
+      $body = err('check_pwds');
+      $footer = TRUE;
+    } else {
+      set_t('auth_username', $user); 
+      read_user_profile(); set_profile();
+      write_user_profile($user, generate_profile($user, $_POST['pass'], t('opt_auth_mode_default')));
+      $header = t('success');
+      $body = s("<p>%%1</p>", s(t('msg_init_finish'), $user));
+      $footer = TRUE;
+      user_session_destroy();
+    }
+  } else {
+    $_SESSION['nonce'] = $user.time();
+    set_t('auth_username', $user);
+    read_user_profile(); set_profile();
+    $header = s(t('msg_password_set'), $user);
+    $body = t("%%1
+      <form method='POST'>
+        <table border='0'>
+        <tr><td>%%2</td><td>".t('auth_username')."</td></tr>
+        <tr><td>%%3</td><td><input type='password' name='pass' /></td></tr>
+        <tr><td>%%4</td><td><input type='password' name='confirm' /></td></tr>
+        <tr><td><input type='submit' value='%%5' />
+        <input type='submit' name='cancel' value='%%6' /></td></tr>
+        <input type='hidden' name='nonce' value='".$_SESSION['openid-admin']['nonce']."' />
+        </table>
+      </form>", 'user_edit_caption', 'user_edit_openid', 'msg_password', 'msg_password_check', 
+	            'submit', 'cancel');
+    $footer = FALSE;
+  }
+  include("templates/admin-results.tpl.php");
+  exit(0);
+}
+
+?>

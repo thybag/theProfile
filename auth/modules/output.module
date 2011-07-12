@@ -1,0 +1,47 @@
+<?php
+
+/**
+ *  Define functions that may not exist in earlier PHP versions
+ */
+
+function wrap_html($message, $header = '') {
+  include('templates/main.tpl.php');
+  exit(0);
+}
+
+function wrap_kv($keys) {
+  debug($keys, 'Wrapped key/vals');
+  header('Content-Type: text/plain; charset=UTF-8');
+  foreach ($keys as $key => $value) {
+    printf("%s:%s\n", $key, $value);
+  }
+  exit(0);
+}
+
+function wrap_location($url, $keys) {
+  $keys = append_openid($keys);
+  debug($keys, 'Location keys');
+
+  $q = strpos($url, '?') ? '&' : '?';     
+  header('Location: ' . $url . $q . http_build_query($keys, '', '&'));
+  debug('Location: ' . $url . $q . http_build_query($keys, '', '&'));
+  exit(0);
+}
+
+function wrap_refresh($url, $message = NULL) {
+  include('templates/redir.tpl.php');
+  debug('Refresh: ' . $url);
+  exit(0);
+}
+
+function append_openid($array) {
+  $keys = array_keys($array);
+  $vals = array_values($array);
+
+  $r = array();
+  for ($i=0; $i<sizeof($keys); $i++)
+    $r['openid.' . $keys[$i]] = $vals[$i];
+  return $r;
+}
+
+?>
